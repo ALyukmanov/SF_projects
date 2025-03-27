@@ -1,0 +1,12 @@
+# Файлы кэша и временные файлы Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Файлы настроек IDE
+.idea/
+.vscode/
+
+# Файлы зависимостей
+*.egg-info/
+pip-wheel-metadata/
