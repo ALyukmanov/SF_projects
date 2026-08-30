@@ -1,0 +1,11 @@
+# Testing
+pytest==7.4.3
+pytest-cov==4.1.0    # required for `pytest --cov=src --cov=api` in CI (.github/workflows/ci.yml)
+
+# Linting & formatting
+ruff==0.4.4          # fast linter + formatter (replaces black + flake8)
+pre-commit==3.7.0    # git hooks
+
+# Notebooks (optional, for EDA)
+jupyter==1.0.0
+ipykernel==6.27.1

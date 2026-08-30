@@ -1,0 +1,79 @@
+services:
+  ml-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wine-ml-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/srv/data
+      - artifacts_data:/srv/artifacts
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    networks:
+      - ml-monitoring
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: wine-prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      ml-api:
+        condition: service_healthy
+    networks:
+      - ml-monitoring
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: wine-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - ml-monitoring
+    restart: unless-stopped
+
+  traffic-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wine-traffic-generator
+    profiles: ["traffic"]
+    command: ["python", "scripts/generate_requests.py", "--url", "http://ml-api:8000", "--count", "200", "--delay", "0.2"]
+    volumes:
+      - ./data:/srv/data
+      - ./scripts:/srv/scripts
+    depends_on:
+      ml-api:
+        condition: service_healthy
+    networks:
+      - ml-monitoring
+
+networks:
+  ml-monitoring:
+    driver: bridge
+
+volumes:
+  artifacts_data:
+  prometheus_data:
+  grafana_data:

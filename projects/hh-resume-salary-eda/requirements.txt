@@ -1,0 +1,19 @@
+# Core data handling
+pandas==2.3.3
+numpy==2.2.6
+
+# Visualization
+matplotlib==3.10.8
+seaborn==0.13.2
+plotly==6.8.0
+
+# Notebook execution
+jupyter==1.1.1
+ipykernel==7.1.0
+
+# Note: versions above are current, compatible pins for the packages the notebook
+# actually imports (see the imports cell in notebooks/hh_resume_salary_eda.ipynb).
+# They were not reproduced from the author's original environment (unknown/undocumented);
+# treat them as a tested-compatible floor, not a byte-for-byte reproduction of past runs.
+# The notebook also relies on Python 3.12+ syntax (nested identical quotes inside an
+# f-string in the "Образование" cell), so Python < 3.12 will fail with a SyntaxError.

@@ -1,0 +1,66 @@
+# Файлы кэша и временные файлы Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Файлы настроек IDE
+.idea/
+.vscode/
+
+# Файлы зависимостей
+*.egg-info/
+pip-wheel-metadata/
+.env
+.env.*
+!.env.example
+# Never commit local databases, environments, or large datasets
+**/.venv/
+**/venv/
+**/*.db
+**/*.sqlite*
+**/data/raw/**
+**/data/processed/**
+**/data/*.csv
+**/data/**/*.csv
+**/data/*.xlsx
+**/data/*.parquet
+
+# Archives (never commit raw dataset archives)
+*.zip
+*.rar
+*.7z
+
+# Trained models / serialized artifacts (never commit without explicit justification)
+**/models/*.pkl
+**/models/*.joblib
+**/models/*.h5
+*.pkl
+*.joblib
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Cache / lint / test artifacts (root-level catch-all; some projects also add local rules)
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# OS / archive-extraction junk
+.DS_Store
+__MACOSX/
+Thumbs.db
+
+# Keep empty-directory placeholders even under otherwise-ignored data/model/log dirs,
+# so project structure (data/raw/, data/processed/, models/, logs/) survives in Git
+# without needing real data present.
+!**/.gitkeep
+
+# Scratch screenshots, not curated portfolio assets.
+/artifacts/
+
+# wine-quality-model-monitoring ships with the small (~84 KB), public UCI
+# Wine Quality CSV so `docker compose up --build` is reproducible for a
+# fresh clone without a manual `git add -f` step. Same precedent as
+# projects/wine-quality-svm-classification, which already tracks this file.
+!projects/wine-quality-model-monitoring/data/
+!projects/wine-quality-model-monitoring/data/winequality-red.csv

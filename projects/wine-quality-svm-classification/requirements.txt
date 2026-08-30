@@ -1,0 +1,11 @@
+# Inferred from the imports actually used in notebooks/winequality_svm_project.ipynb.
+# Pin ranges are bounded but not exact-pinned; adjust to your local Python
+# (verified against Python 3.10.11).
+
+pandas>=2.0,<3.0
+numpy>=1.26,<3.0
+matplotlib>=3.8,<4.0
+scikit-learn>=1.4,<2.0
+
+# Optional, only needed if you want a Jupyter environment to open/re-run the notebook:
+jupyter>=1.0,<2.0

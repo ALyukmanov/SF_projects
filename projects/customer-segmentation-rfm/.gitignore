@@ -1,0 +1,7 @@
+# Raw data and regenerable derived artifacts stay out of Git (see data/README.md).
+/data/*.csv
+/data/*.zip
+!/data/README.md
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><title>Купить квартиру — example.com (unknown markup)</title></head>
+<body>
+<!--
+  Simulates a front-end change so drastic that none of the three parsing
+  strategies' selectors match anything: no <article>, no
+  data-name="CardComponent", and no class containing "card" / "listing-item"
+  / "offer-item". _parse_article_tags() must return an empty list rather
+  than raising.
+-->
+<div id="results">
+  <div class="items-wrapper">
+    <div class="ItemBox">
+      <a href="https://example.com/sale/flat/900030/">Некоторое объявление</a>
+      <span>3-комн. квартира, 90 м²</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

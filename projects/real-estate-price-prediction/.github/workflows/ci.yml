@@ -1,0 +1,67 @@
+name: CI
+
+# Python version: aligned to 3.11 to match the Dockerfile (`python:3.11-slim`).
+# requirements.txt's exact pins resolve cleanly under Python 3.11 via `pip
+# install --dry-run` — see requirements.txt's own header comment and
+# README.md "Ограничения" for exactly what is resolver-verified vs.
+# runtime-verified.
+#
+# Scope decisions:
+# - No Docker build step: a Dockerfile exists at the project root, kept out
+#   of CI to keep runtime short — see README.md "Ограничения".
+# - notebooks/01_real_estate_price_prediction.ipynb is NOT executed in CI —
+#   it takes ~1-2 minutes end-to-end and trains 4 real models + 4 baselines
+#   with 5-fold CV, which is more CI time than a lint/test gate should cost.
+#   Re-execute it manually before any release: see README.md "Запуск notebook".
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: projects/real-estate-price-prediction
+
+jobs:
+  test:
+    name: Lint + Test (Python 3.11)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            projects/real-estate-price-prediction/requirements.txt
+            projects/real-estate-price-prediction/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Check for dependency conflicts (pip check)
+        run: pip check
+
+      - name: Lint (ruff check)
+        run: ruff check .
+
+      - name: Format check (ruff format --check)
+        run: ruff format --check .
+
+      - name: Compile / import smoke check (compileall)
+        run: python -m compileall -q src api dashboard scripts tests
+
+      - name: Run unit tests with coverage (network-excluded by default)
+        run: |
+          pytest tests/ -v --cov=src --cov=api --cov-report=term-missing
+        # tests/integration/ is excluded by pyproject.toml's own
+        # `addopts = "--ignore=tests/integration"` — no extra flag needed here.

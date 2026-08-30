@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+tests
+scripts
+grafana
+prometheus
+artifacts
+assets
+notebooks
+*.md
+.env

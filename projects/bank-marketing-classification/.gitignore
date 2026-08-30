@@ -1,0 +1,6 @@
+# Raw data stays out of Git (see data/README.md for source & retrieval).
+/data/*.csv
+!/data/README.md
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

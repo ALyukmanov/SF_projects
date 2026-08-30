@@ -1,0 +1,77 @@
+services:
+  # Streamlit Dashboard
+  dashboard:
+    build: .
+    container_name: realestate_dashboard
+    command: streamlit run dashboard/app.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    healthcheck:
+      # /_stcore/health is Streamlit's own built-in readiness endpoint —
+      # confirms the app actually served a request, not just that the
+      # process is running.
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - realestate_network
+
+  # FastAPI REST API
+  api:
+    build: .
+    container_name: realestate_api
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    healthcheck:
+      # GET /health returns model_loaded/model_info — a real readiness
+      # signal (model actually loaded, not just "process is up").
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - realestate_network
+
+  # Telegram Bot (optional - requires TELEGRAM_BOT_TOKEN)
+  telegram-bot:
+    build: .
+    container_name: realestate_telegram_bot
+    command: python telegram_bot/bot.py
+    volumes:
+      - ./models:/app/models:ro
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - realestate_network
+    profiles:
+      - bot
+
+networks:
+  realestate_network:
+    driver: bridge

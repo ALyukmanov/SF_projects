@@ -1,0 +1,15 @@
+# Артефакты обучения генерируются при training/retraining, в git не идут.
+artifacts/*.joblib
+artifacts/*.joblib.tmp
+artifacts/model_metadata.json
+artifacts/model_metadata.json.tmp
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Именованные volume Docker Compose хранит сам движок, не эта папка.
+
+.env

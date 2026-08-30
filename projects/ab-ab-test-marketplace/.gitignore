@@ -1,0 +1,11 @@
+# Raw data (16-18 MB per file, exceeds the 5 MB no-justification limit; see data/README.md)
+data/*.csv
+
+# Notebook checkpoints and caches
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+
+# Local environments
+.venv/
+venv/

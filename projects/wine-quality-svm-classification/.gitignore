@@ -1,0 +1,12 @@
+# This project intentionally commits its raw dataset (see data/README.md
+# "Why this file is committed" section): winequality-red.csv is ~84 KB, a
+# small public benchmark dataset, well under the 5 MB repository-safety
+# threshold. The root .gitignore's blanket `**/data/**/*.csv` rule would
+# otherwise silently exclude it, so it is explicitly re-included here.
+!data/winequality-red.csv
+
+# Everything else follows the normal repository conventions (no local
+# environments, caches, or generated artifacts).
+.ipynb_checkpoints/
+__pycache__/
+*.pyc

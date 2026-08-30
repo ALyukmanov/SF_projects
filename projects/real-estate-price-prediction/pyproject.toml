@@ -1,0 +1,46 @@
+[tool.pytest.ini_options]
+# Run only unit tests by default (no network calls).
+# Integration tests live in tests/integration/ and must be run explicitly:
+#   pytest tests/integration/ -v
+testpaths = ["tests"]
+addopts = "-v --tb=short --ignore=tests/integration"
+markers = [
+    "integration: marks tests that require network access (run with: pytest tests/integration/)",
+]
+
+[tool.ruff]
+line-length = 100
+# Aligned to match Dockerfile's `python:3.11-slim` (previously py310, which
+# disagreed with the Dockerfile). Verified against the actual application
+# code (compileall + full pytest suite, 149 passed/1 skipped) under a
+# genuine Python 3.11.9 interpreter. `requirements.txt`'s exact pins were
+# initially only resolver-checked with substitute versions because the
+# original streamlit==1.29.0 pin required numpy<2, conflicting with
+# numpy==2.2.6 (a real ResolutionImpossible error, reproduced twice).
+# Fixed 2026-07-29: streamlit bumped to 1.38.0 — `pip install --dry-run -r
+# requirements.txt -r requirements-dev.txt` now resolves the FULL exact pin
+# set cleanly under Python 3.11.9 (verified, not assumed). Note this is
+# resolver-level verification, not a runtime import/execution check — see
+# README.md "Ограничения" for the precise, current scope.
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # line-length handled separately
+
+[tool.ruff.lint.isort]
+# Without this, ruff's isort splits any `from x import (a, b as c)` block into
+# one import statement per name as soon as a single alias is present (even
+# for the non-aliased names in the same block) — see
+# src/data_collection/cian_scraper.py's multi-name aliased import of
+# src.data_collection.parsing_utils for the case that surfaced this.
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+# Scripts do sys.path.insert() before imports — E402 is intentional
+"scripts/*.py" = ["E402"]
+# Tests do sys.path.insert() for import resolution — E402 is intentional
+"tests/*.py" = ["E402"]
+"tests/**/*.py" = ["E402"]
+# Telegram bot has env-dependent imports after dotenv load
+"telegram_bot/bot.py" = ["E402"]

@@ -1,0 +1,9 @@
+pandas>=2.2,<3
+numpy>=2.0,<3
+scipy>=1.13,<2
+statsmodels>=0.14,<0.15
+
+# For running/re-executing the notebook
+jupyter>=1.0
+ipykernel>=6.29
+nbclient>=0.10

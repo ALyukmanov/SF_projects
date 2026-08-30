@@ -1,0 +1,43 @@
+MIT License
+
+Copyright (c) 2026 ALyukmanov
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Scope note
+
+This license covers the **code** in this repository (notebooks, scripts, `src/`,
+`api/`, `dashboard/`, etc.) authored by the repository owner. It does **not**
+apply to, and does not override the terms of, any third-party datasets
+referenced or used by the projects in `projects/`, including but not limited to:
+
+- HeadHunter (hh.ru) resume/vacancy exports (`projects/hh-resume-salary-eda`,
+  `projects/hh-vacancy-employer-sql`)
+- Kaggle competition datasets, e.g. `sf-booking` (`projects/hotel-rating-anomaly-detection`)
+  and the NYC Taxi Trip Duration competition (`projects/nyc-taxi-trip-duration`)
+- The UCI/Kaggle "Online Retail" transactions dataset (`projects/customer-segmentation-rfm`)
+- The UCI red wine quality dataset (`projects/wine-quality-svm-classification`)
+- CIAN.ru scraped listings and CBR macroeconomic data (`projects/real-estate-price-prediction`)
+
+None of these raw datasets are redistributed in this repository (see each
+project's `data/README.md` for source, access, and license/usage notes). Users
+of this repository's code must independently obtain and comply with the license
+terms of any dataset they use with it.

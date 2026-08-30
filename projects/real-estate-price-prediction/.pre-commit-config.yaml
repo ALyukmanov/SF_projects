@@ -1,0 +1,30 @@
+repos:
+  # Standard pre-commit hooks
+  # files: pattern scopes hooks to this project only (relative to git root GIT/).
+  # Without this, pre-commit walks all sibling projects in the workspace.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        files: ^final_project/final_project/
+      - id: end-of-file-fixer
+        files: ^final_project/final_project/
+      - id: check-yaml
+        files: ^final_project/final_project/
+      - id: check-json
+        files: ^final_project/final_project/
+      - id: check-merge-conflict
+        files: ^final_project/final_project/
+      - id: debug-statements    # catches stray print/pdb/breakpoint
+        files: ^final_project/final_project/
+      - id: check-added-large-files
+        args: ["--maxkb=5000"]  # block accidental model .pkl commits
+        files: ^final_project/final_project/
+
+  # Ruff: fast Python linter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: ["--fix"]         # auto-fix safe issues
+        files: ^final_project/final_project/

@@ -1,0 +1,6 @@
+# Raw data (up to ~900MB combined) stays out of Git — see data/README.md.
+/data/*.csv
+!/data/README.md
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

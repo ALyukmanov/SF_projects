@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><title>Купить квартиру — example.com (redesigned markup)</title></head>
+<body>
+<!--
+  Simulates a CIAN front-end redesign: no <article> tags and no
+  data-name="CardComponent" wrapper anymore, only a generic class name
+  that happens to contain the substring "card". Exercises the third-level
+  fallback selector `[class*='card']` in _parse_article_tags().
+-->
+<div class="js-catalog-card-item">
+  <a href="https://example.com/sale/flat/900020/">Открыть объявление</a>
+  <span>1-комн. квартира, 38.2 м²</span>
+  <span>2/9 эт.</span>
+  <span>6 100 000 ₽</span>
+  <span>ул. Новая, д. 7</span>
+</div>
+</body>
+</html>

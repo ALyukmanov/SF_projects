@@ -1,0 +1,154 @@
+# Real Estate Price Prediction - Main Configuration
+
+project:
+  name: "Real Estate Price Prediction"
+  version: "1.0.0"
+
+cities:
+  moskva:
+    name: "Москва"
+    region_id: 1
+    lat: 55.7558
+    lon: 37.6173
+    pages_default: 20
+  spb:
+    name: "Санкт-Петербург"
+    region_id: 2
+    lat: 59.9311
+    lon: 30.3609
+    pages_default: 15
+  ekaterinburg:
+    name: "Екатеринбург"
+    region_id: 4743
+    lat: 56.8389
+    lon: 60.6057
+    pages_default: 10
+  novosibirsk:
+    name: "Новосибирск"
+    region_id: 4897
+    lat: 54.9833
+    lon: 82.8964
+    pages_default: 10
+  kazan:
+    name: "Казань"
+    region_id: 4777
+    lat: 55.7887
+    lon: 49.1221
+    pages_default: 10
+  nizhniy-novgorod:
+    name: "Нижний Новгород"
+    region_id: 4885
+    lat: 56.2965
+    lon: 43.9361
+    pages_default: 8
+  samara:
+    name: "Самара"
+    region_id: 4966
+    lat: 53.2038
+    lon: 50.1606
+    pages_default: 8
+  krasnodar:
+    name: "Краснодар"
+    region_id: 4820
+    lat: 45.0355
+    lon: 38.9753
+    pages_default: 8
+
+scraping:
+  delay_min: 2.0
+  delay_max: 5.0
+  max_retries: 3
+  retry_delay: 10
+  headless: true
+  timeout: 30
+  max_pages_per_city: 30
+  listings_per_page: 28
+  user_agents:
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    - "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0"
+    - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+data:
+  raw_dir: "data/raw"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
+  models_dir: "models"
+  logs_dir: "logs"
+
+preprocessing:
+  min_price: 500000
+  max_price: 200000000
+  min_area: 10
+  max_area: 500
+  min_rooms: 0
+  max_rooms: 10
+  min_floor: 1
+  max_floor: 100
+
+features:
+  # NOTE: as of feature_schema_version 2.0 (src/features/feature_engineering.py),
+  # this file is NOT read by any code — it documents the intended feature set
+  # for a human reader but is not wired into the pipeline (5 separate Python
+  # modules hold the real, hardcoded values: src/preprocessing/cleaner.py,
+  # src/models/trainer.py, src/inference/predictor.py, dashboard/app.py,
+  # scripts/run_feature_engineering_real.py). Wiring this file in is a
+  # tracked roadmap item, not implemented yet — do not describe it
+  # as "single source of truth" in docs.
+  target: "price"
+  numeric:
+    - "rooms"
+    - "total_area"
+    - "floor"
+    - "floors_total"
+    - "building_age"
+    - "floor_ratio"
+    - "is_top_floor"
+    - "is_first_floor"
+    - "log_area"
+    - "room_density"
+    - "rooms_x_area"
+    - "key_rate"
+    - "usd_rate"
+    - "inflation_rate"
+    - "rate_change_6m"
+    # price_per_sqm is intentionally EXCLUDED from model input features — it
+    # is derived from the target (price / area) and would be data leakage.
+    # It remains available in the processed DataFrame for EDA only.
+  categorical:
+    - "city"           # one-hot encoded against a fixed 8-city list (see CITY_SLUGS)
+    - "building_type"  # one-hot encoded against a fixed 4-type list (see BUILDING_TYPE_SLUGS)
+  # deal_type: removed. The dataset and scrapers only ever cover sale
+  # listings (no rentals) — this project's scope is explicitly sale-price
+  # prediction, so a deal_type feature/field would be pure config-only
+  # vapor with nothing behind it.
+
+model:
+  # NOTE: this whole file is illustrative only, not read by any code (see the
+  # comment on `features:` above) — the ACTUAL default is
+  # scripts/run_model_training_real.py's --model argparse default
+  # (linear_regression, per scripts/compare_models_real.py's benchmark;
+  # xgboost's hyperparameters below are kept for reference since xgboost
+  # remains a supported --model choice, just not the default).
+  type: "linear_regression"
+  path: "models"
+  params:  # xgboost-specific; linear_regression/ridge take no equivalent tuning here
+    n_estimators: 500
+    max_depth: 6
+    learning_rate: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    min_child_weight: 3
+    random_state: 42
+  test_size: 0.2
+  cv_folds: 5
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  model_path: "models"
+  cors_origins:
+    - "*"
+
+dashboard:
+  port: 8501
+  title: "Real Estate Price Prediction"

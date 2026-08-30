@@ -1,0 +1,10 @@
+# Raw data stays out of Git (see data/README.md for source & retrieval).
+# Root .gitignore already excludes **/data/*.csv globally; kept explicit here too.
+/data/*.csv
+!/data/README.md
+
+# Generated Kaggle submission file (produced by the notebook's final cell).
+/submission.csv
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

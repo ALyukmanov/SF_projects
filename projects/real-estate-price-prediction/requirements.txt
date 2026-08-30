@@ -1,0 +1,88 @@
+# Core Data Science
+# Versions marked "(verified 2026-07-27)" were bumped to match what was
+# actually installed and exercised (149 tests passing, model retrained, API
+# imported and served live). Versions marked UNVERIFIED are pinned but were
+# not actually imported/run at that time — don't assume they work until
+# installed and checked.
+#
+# 2026-07-29: the full pinned set below (requirements.txt +
+# requirements-dev.txt together) was confirmed to resolve cleanly with
+# `pip install --dry-run` under Python 3.11.9 — no ResolutionImpossible
+# error, every pin honoured exactly as written. This specifically fixes a
+# real, reproduced conflict: numpy==2.2.6 (below) vs. the previous
+# streamlit==1.29.0 pin, which requires numpy<2.
+pandas==2.3.3          # verified 2026-07-27
+numpy==2.2.6            # verified 2026-07-27
+scipy==1.15.3           # verified 2026-07-27
+pyarrow==23.0.1          # PINNED 2026-08-27 — an unpinned
+                          # transitive dependency (pulled in by streamlit for dataframe
+                          # rendering) previously resolved to whatever was latest at install
+                          # time. A fresh `pip install` in a clean environment resolved pyarrow
+                          # to 25.0.1, which fails with `ImportError: DLL load failed while
+                          # importing _compute` on this project's target Windows/Python 3.10
+                          # environment — while 23.0.1 imports and runs cleanly there.
+                          # Pinned explicitly so a fresh clone resolves to the known-good
+                          # version instead of silently picking up a newer, locally-broken one.
+
+# Data Collection & Web Scraping
+requests==2.32.5        # verified 2026-07-27
+beautifulsoup4==4.14.3  # verified 2026-07-27
+selenium==4.16.0        # UNVERIFIED (not installed/import-tested)
+webdriver-manager==4.0.1  # UNVERIFIED
+lxml==5.1.0             # UNVERIFIED
+fake-useragent==1.4.0   # UNVERIFIED
+brotli==1.1.0           # ADDED 2026-07-29 — real bug found and fixed, see below
+# Why brotli is now required, not optional: the scraper's own request headers
+# (src/data_collection/network.py::_DEFAULT_HEADERS) advertise
+# `Accept-Encoding: gzip, deflate, br`. A single sparing live check against
+# CIAN confirmed the server responds with `Content-Encoding: br`
+# (Brotli) — but neither `requests` nor `urllib3` can decompress Brotli
+# without this package installed. Without it, `response.text` silently
+# returns garbled/mojibake bytes instead of raising an error, which anyone
+# debugging "the parser finds 0 listings" would very plausibly (and
+# incorrectly) blame on stale CSS selectors or anti-bot blocking, when the
+# actual cause was a missing dependency for a capability the code already
+# claimed to support. Verified live under Python 3.11.9: without brotli
+# installed, the response decoded to unreadable binary noise; with it
+# installed, the same response decoded to real, readable HTML (which in
+# this specific case turned out to be a CAPTCHA challenge page — see
+# src/data_collection/README.md "Site-liveness" for that separate,
+# unrelated finding).
+
+# Telegram Bot
+python-telegram-bot==20.7  # UNVERIFIED (not installed/import-tested)
+
+# Visualization (dashboard)
+plotly==6.8.0            # verified 2026-07-27
+
+# Machine Learning
+scikit-learn==1.7.2      # verified 2026-07-27 — current model artifact was trained under this version
+xgboost==3.2.0            # verified 2026-07-27
+lightgbm==4.2.0           # UNVERIFIED (not exercised — not used by the current trained model)
+catboost==1.2.10          # verified 2026-08-26 (model benchmark, scripts/compare_models_real.py)
+                          # -- bumped from 1.2.2 to match what was actually installed/exercised;
+                          # 1.2.2 was never verified against, it was a guess carried from an earlier pin
+optuna==4.9.0             # ADDED 2026-08-26 (hyperparameter tuning, scripts/tune_models_real.py)
+                          # -- honest protocol: train->GroupKFold CV on train only->select->single
+                          # held-out test evaluation
+
+# Web Application & API
+streamlit==1.38.0        # bumped from 1.29.0 — verified 2026-07-29 via `pip install --dry-run`
+                          # under Python 3.11.9: 1.29.0 pins numpy<2, which conflicts with
+                          # numpy==2.2.6 pinned above (real ResolutionImpossible error,
+                          # reproduced independently). 1.38.0 resolves cleanly against every
+                          # other exact pin in this file (full dependency set verified, not
+                          # just this one package) — dependency-resolver verified, not
+                          # separately run-time verified. See README.md "Ограничения".
+fastapi==0.135.3         # verified 2026-07-27
+uvicorn==0.42.0           # verified 2026-07-27
+pydantic==2.12.5         # verified 2026-07-27
+python-multipart==0.0.6   # UNVERIFIED
+
+# Utilities
+python-dotenv==1.0.0      # UNVERIFIED
+tqdm==4.66.1               # UNVERIFIED
+joblib==1.5.3              # verified 2026-07-27
+pyyaml==6.0.3               # verified 2026-07-27
+
+# Dev tools: see requirements-dev.txt

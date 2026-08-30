@@ -1,0 +1,11 @@
+# Raw data stays out of Git (see data/README.md for source & retrieval).
+# Root .gitignore already excludes **/data/*.csv globally; kept explicit here too.
+/data/*.csv
+!/data/README.md
+
+# Heavy interactive Plotly HTML exports (multi-MB each) - working artifacts only,
+# not portfolio assets. See README.md for how to regenerate/view them locally.
+/notebooks/exports/*.html
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
