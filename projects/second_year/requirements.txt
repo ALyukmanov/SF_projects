@@ -1,0 +1,15 @@
+# Зависимости проекта. Установка: pip install -r requirements.txt && pip install -e .
+pandas>=2.0
+numpy>=1.24
+scipy>=1.10
+scikit-learn>=1.3
+pyarrow>=12.0
+pyyaml>=6.0
+matplotlib>=3.7
+seaborn>=0.12
+
+# dev / notebooks
+pytest>=7.0
+jupyter>=1.0
+nbclient>=0.8
+nbformat>=5.9

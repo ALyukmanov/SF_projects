@@ -1,0 +1,40 @@
+# Данные (сырые ~940 МБ и производные) — не коммитим
+data/raw/
+data/interim/
+data/processed/
+*.parquet
+*.csv
+
+# Обученные модели / сериализованные артефакты
+artifacts/
+*.pkl
+*.joblib
+*.npy
+
+# Окружение
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Python / кэши
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ОС / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Явно оставляем в репозитории
+!configs/
+!.gitignore
+!requirements.txt
+!pyproject.toml
