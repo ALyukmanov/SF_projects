@@ -269,6 +269,15 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
 
     try:
         result: Dict[str, Any] = _predictor.predict(request.model_dump())
+    except RuntimeError as exc:
+        # Operational misconfiguration the caller/operator can act on (today:
+        # a geo model loaded without data/external/osm_poi.csv). Safe to
+        # surface verbatim — it names only a well-known artefact path.
+        logger.error("Prediction unavailable: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=ErrorResponse(detail=str(exc), error_type="ModelDependencyMissing").model_dump(),
+        ) from exc
     except Exception as exc:
         logger.error("Prediction failed: %s", exc, exc_info=True)
         raise HTTPException(

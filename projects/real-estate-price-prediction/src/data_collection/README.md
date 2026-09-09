@@ -16,11 +16,18 @@ python -m src.data_collection scrape --source restate --city moscow --incrementa
 `sources/restate.py` fetches `/choice/<city>/<category>` search-results
 pages and parses the schema.org `RealEstateListing` `ItemList` embedded as
 JSON-LD — no HTML-scraping heuristics needed for price/area/rooms/floor/
-address/url. It deliberately does **not** bulk-fetch individual detail
-pages (each carries `<meta name="robots" content="noindex, nofollow">` —
-see the module's own docstring for the reasoning). `normalize.py` turns the
-raw captured JSON-LD items into the project's flat listing schema, kept
-separate from fetching so a parsing-rule fix doesn't require re-scraping.
+address/url. The bulk `scrape` step does **not** open individual detail
+pages. `normalize.py` turns the raw captured JSON-LD items into the
+project's flat listing schema, kept separate from fetching so a
+parsing-rule fix doesn't require re-scraping.
+
+`scripts/enrich_coordinates.py` is a separate, opt-in step that *does* fetch
+each listing's detail page (`/base/<id>.html`, allowed by robots.txt) once,
+slowly, to read the `data-lat`/`data-lng` map coordinates that the
+search-results JSON-LD doesn't include. It caches every fetched page
+(`data/raw/restate_details/coordinates.jsonl`) and can be stopped and
+resumed. Output goes to `restate_<city>_listings_geo.csv` next to the
+originals, which are left untouched.
 
 The CIAN scrapers documented below are **not deleted, but not being
 invested in further**: every live contact attempt so far, including from

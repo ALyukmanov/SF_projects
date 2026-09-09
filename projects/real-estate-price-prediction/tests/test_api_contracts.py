@@ -176,6 +176,22 @@ class TestMalformedInputReturnsClean422:
         resp = client.post("/predict", json={**_BASE_PAYLOAD, "year_built": 1500})
         assert resp.status_code == 422
 
+    def test_latitude_out_of_range_is_rejected(self, client: TestClient):
+        assert client.post("/predict", json={**_BASE_PAYLOAD, "latitude": 95.0}).status_code == 422
+        assert client.post("/predict", json={**_BASE_PAYLOAD, "latitude": -91.0}).status_code == 422
+
+    def test_longitude_out_of_range_is_rejected(self, client: TestClient):
+        assert client.post("/predict", json={**_BASE_PAYLOAD, "longitude": 200.0}).status_code == 422
+        assert (
+            client.post("/predict", json={**_BASE_PAYLOAD, "longitude": -181.0}).status_code == 422
+        )
+
+    def test_valid_coordinates_are_accepted(self, client: TestClient):
+        resp = client.post(
+            "/predict", json={**_BASE_PAYLOAD, "latitude": 55.75, "longitude": 37.62}
+        )
+        assert resp.status_code == 200
+
     def test_empty_body_is_rejected(self, client: TestClient):
         resp = client.post("/predict", json={})
         assert resp.status_code == 422

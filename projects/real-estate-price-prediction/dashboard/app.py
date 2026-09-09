@@ -381,6 +381,20 @@ def render_sidebar() -> str:
             st.caption(f"Тип: {info.get('model_type', 'N/A')}")
             st.caption(f"Дата обучения: {info.get('trained_at', 'N/A')}")
             st.caption(f"Источник данных: {info.get('data_source', 'N/A')}")
+            if info.get("geo_enabled"):
+                cov = (info.get("coordinate_coverage") or {}).get("coordinate_coverage_pct")
+                cov_txt = f" · координаты у {cov:.0f}% объявлений" if cov else ""
+                if info.get("geo_poi_available"):
+                    st.caption(f"Геопризнаки OSM: включены{cov_txt}")
+                else:
+                    st.error(
+                        "Модель использует геопризнаки OSM, но файл "
+                        "`data/external/osm_poi.csv` не найден — прогноз недоступен. "
+                        "Запустите `python scripts/prepare_osm_poi.py`.",
+                        icon="⚠️",
+                    )
+            else:
+                st.caption("Геопризнаки OSM: не используются")
         else:
             st.warning("DEMO-режим (модель не найдена)", icon="⚠️")
             st.caption(
@@ -444,6 +458,38 @@ def render_prediction_page() -> None:
                 "Год постройки", min_value=1900, max_value=2026, value=2000, step=1
             )
 
+        # --- Coordinates (optional) — used only if the loaded model has geo features ---
+        _pred_geo = load_predictor()
+        _geo_on = _pred_geo.is_ready() and _pred_geo.model_info.get("geo_enabled")
+        latitude: Optional[float] = None
+        longitude: Optional[float] = None
+        if _geo_on:
+            use_coords = st.checkbox(
+                "Указать координаты (расстояния до метро, школ и т.д.)", value=False
+            )
+            if use_coords:
+                latitude = st.number_input(
+                    "Широта", min_value=-90.0, max_value=90.0, value=55.7558,
+                    step=0.0001, format="%.4f",
+                )
+                longitude = st.number_input(
+                    "Долгота", min_value=-180.0, max_value=180.0, value=37.6173,
+                    step=0.0001, format="%.4f",
+                )
+                st.caption(
+                    "Только Москва и Санкт-Петербург (для них есть данные OSM). Без "
+                    "координат прогноз работает, но без геопризнаков."
+                )
+
+        property_category_label = st.selectbox(
+            "Тип объекта",
+            options=["Квартира", "Комната", "Дом / коттедж"],
+            index=0,
+            help="Для комнат и домов источник не публикует часть полей — оценка менее надёжна.",
+        )
+        _cat_map = {"Комната": "room_sale", "Дом / коттедж": "cottages_sale"}
+        property_category: Optional[str] = _cat_map.get(property_category_label)
+
         st.divider()
         calculate = st.button("🔍 Рассчитать", type="primary", use_container_width=True)
 
@@ -458,10 +504,19 @@ def render_prediction_page() -> None:
             "building_type": building_type_val,
             "year_built": year_built,
         }
+        if latitude is not None and longitude is not None:
+            features["latitude"] = float(latitude)
+            features["longitude"] = float(longitude)
+        if property_category is not None:
+            features["property_category"] = property_category
 
         predictor = load_predictor()
-        with st.spinner("Вычисляем оценку…"):
-            result = predictor.predict(features)
+        try:
+            with st.spinner("Вычисляем оценку…"):
+                result = predictor.predict(features)
+        except RuntimeError as exc:
+            st.error(f"Прогноз недоступен: {exc}", icon="🚫")
+            st.stop()
 
         # Round to a precision that doesn't overstate the model's actual
         # accuracy (MAE is on the order of millions of RUB — see "О модели").
@@ -572,9 +627,43 @@ def render_prediction_page() -> None:
         col_min.caption(f"Нижняя граница: **{fmt_price(price_min)}**")
         col_max.caption(f"Верхняя граница: **{fmt_price(price_max)}**")
 
+        # --- Geo-features indicator ---
+        _info = predictor.model_info
+        if _info.get("geo_enabled"):
+            if features.get("latitude") is not None and city in ("Москва", "Санкт-Петербург"):
+                st.success(
+                    "Геопризнаки использованы: расстояния до метро, школ, парков и т.д. "
+                    "рассчитаны по указанным координатам.",
+                    icon="📍",
+                )
+            else:
+                st.info(
+                    "Координаты не заданы (или город без данных OSM) — прогноз сделан без "
+                    "геопризнаков, `has_coordinates = 0`.",
+                    icon="📍",
+                )
+
+        # --- Segment-reliability warning ---
+        if result.get("prediction_reliability") == "limited_data":
+            seg = result.get("segment_support") or {}
+            st.warning(
+                f"**Ограниченные данные для категории «{property_category_label}».** "
+                f"{seg.get('reason', '')} "
+                f"(holdout R² ≈ {seg.get('holdout_r2', 'н/д')}, "
+                f"объектов на holdout: {seg.get('n_holdout', 'н/д')}). "
+                "Оценка менее надёжна, чем для обычной квартиры.",
+                icon="⚠️",
+            )
+
         # --- Input summary ---
         st.markdown('<div class="section-header">Параметры запроса</div>', unsafe_allow_html=True)
         rooms_display = "Студия" if rooms == 0 else f"{rooms}-комнатная"
+        _coord_row = (
+            f"<tr><td>Координаты</td><td><b>{features['latitude']:.4f}, "
+            f"{features['longitude']:.4f}</b></td></tr>"
+            if features.get("latitude") is not None
+            else "<tr><td>Координаты</td><td><b>не указаны</b></td></tr>"
+        )
         summary_html = f"""
         <div class="result-card">
         <table class="info-table">
@@ -584,6 +673,7 @@ def render_prediction_page() -> None:
           <tr><td>Этаж</td><td><b>{floor} из {floors_total}</b></td></tr>
           <tr><td>Тип здания</td><td><b>{building_type_val or "не указан"}</b></td></tr>
           <tr><td>Год постройки</td><td><b>{year_built if year_built else "не указан"}</b></td></tr>
+          {_coord_row}
         </table>
         </div>
         """
@@ -797,8 +887,9 @@ def render_about_page() -> None:
 
         ### Ключевые возможности
         - Оценка стоимости квартиры по основным характеристикам
+        - Геопризнаки из OpenStreetMap (расстояния до метро, школ, парков и т.д.)
+          по координатам объявления — для Москвы и Санкт-Петербурга
         - Оценочный диапазон прогноза (не формальный доверительный интервал)
-        - Поддержка 8 крупнейших городов России
         - REST API для интеграции с внешними системами
         - DEMO-режим без обученной модели (эвристические цены)
 

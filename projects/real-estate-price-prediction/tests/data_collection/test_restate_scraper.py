@@ -127,9 +127,7 @@ class TestNormalizeRestateRecord:
         norm = normalize_restate_record(raw)
         assert norm["ceiling_height"] == pytest.approx(2.85)
 
-    def test_property_type_defaults_to_flat_for_older_raw_records(
-        self, scraper, fixture_html
-    ):
+    def test_property_type_defaults_to_flat_for_older_raw_records(self, scraper, fixture_html):
         # Raw records captured before source_category/property_type existed
         # (older checkpoints) must still normalize to a sane property_type,
         # not None/crash.

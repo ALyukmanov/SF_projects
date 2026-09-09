@@ -52,26 +52,6 @@ services:
     networks:
       - realestate_network
 
-  # Telegram Bot (optional - requires TELEGRAM_BOT_TOKEN)
-  telegram-bot:
-    build: .
-    container_name: realestate_telegram_bot
-    command: python telegram_bot/bot.py
-    volumes:
-      - ./models:/app/models:ro
-      - ./logs:/app/logs
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-    restart: unless-stopped
-    depends_on:
-      - api
-    networks:
-      - realestate_network
-    profiles:
-      - bot
-
 networks:
   realestate_network:
     driver: bridge

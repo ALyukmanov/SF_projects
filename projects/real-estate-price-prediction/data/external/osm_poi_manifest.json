@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-09-08T00:47:14.186640+00:00",
+  "attribution": "© OpenStreetMap contributors, ODbL — https://www.openstreetmap.org/copyright",
+  "osm_tag_filter": {
+    "amenity": [
+      "school",
+      "kindergarten",
+      "hospital",
+      "clinic"
+    ],
+    "shop": [
+      "supermarket"
+    ],
+    "leisure": [
+      "park"
+    ],
+    "railway": [
+      "station",
+      "halt",
+      "subway_entrance"
+    ],
+    "station": [
+      "subway"
+    ]
+  },
+  "categories": [
+    "hospital",
+    "kindergarten",
+    "metro",
+    "park",
+    "rail_station",
+    "school",
+    "supermarket"
+  ],
+  "row_count": 27539,
+  "counts_by_category": {
+    "supermarket": 8345,
+    "kindergarten": 5791,
+    "school": 4002,
+    "hospital": 3578,
+    "park": 3463,
+    "metro": 1909,
+    "rail_station": 451
+  },
+  "sources": [
+    {
+      "city": "Москва",
+      "url": "https://download.geofabrik.de/russia/central-fed-district-latest.osm.pbf",
+      "file": "central-fed-district.osm.pbf",
+      "sha256": "1fe0b9815bec1ea03aabd2885b3e8352920ee8a602a372c6e8e0ad6aa66e3757",
+      "size_bytes": 875564650,
+      "downloaded_at": "2026-09-07T23:14:33.822969+00:00"
+    },
+    {
+      "city": "Санкт-Петербург",
+      "url": "https://download.geofabrik.de/russia/northwestern-fed-district-latest.osm.pbf",
+      "file": "northwestern-fed-district.osm.pbf",
+      "sha256": "4d1533195930f7eb49074b3100b5bed303151681409d70332c7b60bee69538d2",
+      "size_bytes": 652487615,
+      "downloaded_at": "2026-09-08T00:22:56.494390+00:00"
+    }
+  ]
+}

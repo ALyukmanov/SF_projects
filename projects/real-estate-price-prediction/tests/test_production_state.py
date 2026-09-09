@@ -126,3 +126,48 @@ class TestProductionModelLoads:
         )
         assert result["mode"] == "model"
         assert result["price"] > 0
+
+
+class TestProductionGeoModel:
+    """The promoted production model is the geo model — guard its shape."""
+
+    def test_manifest_is_the_location_grouped_geo_model(self, manifest: dict):
+        assert manifest["split_strategy"] == "location_grouped_80_20_random_state_42"
+
+    def test_artifact_has_45_features_including_geo(self, manifest: dict):
+        from src.features.geo_features import GEO_FEATURE_COLUMNS
+
+        artifact = joblib.load(_MODELS_DIR / manifest["filename"])
+        names = artifact["feature_names"]
+        assert len(names) == 45
+        for col in GEO_FEATURE_COLUMNS:
+            assert col in names
+        assert artifact.get("geo_enabled") is True
+        assert (artifact.get("imputer") or {}).get("fitted") is True
+
+    def test_predictor_reports_geo_enabled_and_poi_available(self, manifest: dict):
+        from src.inference.predictor import Predictor
+
+        p = Predictor(model_path=str(_MODELS_DIR))
+        assert p.load() is True
+        info = p.model_info
+        assert info["geo_enabled"] is True
+        # osm_poi.csv is expected to be present in a working checkout
+        assert info["geo_poi_available"] is True
+        assert p._geo_unavailable is False
+
+    def test_previous_artifact_is_kept_for_rollback(self, manifest: dict):
+        prev = manifest.get("previous_current_filename")
+        assert prev, "manifest must record previous_current_filename for rollback"
+        assert (_MODELS_DIR / prev).is_file(), f"rollback target {prev} missing from models/"
+
+    def test_prediction_uses_coordinates_when_given(self, manifest: dict):
+        from src.inference.predictor import Predictor
+
+        p = Predictor(model_path=str(_MODELS_DIR))
+        assert p.load() is True
+        base = {"rooms": 2, "total_area": 55.0, "floor": 5, "floors_total": 16, "city": "Москва"}
+        near_centre = p.predict({**base, "latitude": 55.7558, "longitude": 37.6173})["price"]
+        far_edge = p.predict({**base, "latitude": 55.55, "longitude": 37.35})["price"]
+        # geo features are actually consumed -> two locations give different prices
+        assert near_centre != far_edge

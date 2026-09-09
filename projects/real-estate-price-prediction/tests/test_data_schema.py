@@ -307,6 +307,79 @@ class TestBuildSplitGroups:
         assert not (train_groups & test_groups)
 
 
+class TestBuildLocationGroups:
+    """build_location_groups() -- the *building-level* grouping key: rows in
+    the same building (same rounded coordinate) OR near-duplicate listings
+    must share a group so they never straddle a train/holdout split."""
+
+    def _df(self, **overrides) -> pd.DataFrame:
+        base = {
+            "url": [f"u{i}" for i in range(6)],
+            "address": ["A"] * 3 + ["B"] * 2 + ["C"],
+            "rooms": [1, 2, 3, 1, 2, 1],
+            "floor": [2, 4, 6, 3, 5, 7],
+            "price": [8e6, 12e6, 20e6, 9e6, 15e6, 7e6],
+            "total_area": [35.0, 50.0, 80.0, 38.0, 55.0, 33.0],
+            # rows 0,1,2 share a coordinate (one building); 3,4 another; 5 alone
+            "latitude": [55.7501, 55.7501, 55.75012, 55.8000, 55.8000, 55.9000],
+            "longitude": [37.6200, 37.6200, 37.62001, 37.7000, 37.7000, 37.8000],
+        }
+        base.update(overrides)
+        return pd.DataFrame(base)
+
+    def test_same_coordinate_rows_share_a_group(self):
+        from src.data.schema import build_location_groups
+
+        g = build_location_groups(self._df())
+        assert g.iloc[0] == g.iloc[1] == g.iloc[2]  # building A
+        assert g.iloc[3] == g.iloc[4]  # building B
+        assert g.iloc[5] not in {g.iloc[0], g.iloc[3]}  # lone building C
+
+    def test_group_count_is_building_level(self):
+        from src.data.schema import build_location_groups
+
+        g = build_location_groups(self._df())
+        assert g.nunique() == 3
+
+    def test_rows_without_coordinates_fall_back_to_near_dup(self):
+        from src.data.schema import build_location_groups
+
+        df = self._df().drop(columns=["latitude", "longitude"])
+        g = build_location_groups(df)
+        # no coords, no near-dups here -> every row its own group
+        assert g.nunique() == len(df)
+
+    def test_near_duplicate_without_coords_still_grouped(self):
+        from src.data.schema import build_location_groups
+
+        df = pd.DataFrame(
+            {
+                "url": ["a", "b", "c"],
+                "address": ["ул. Тест, 1", "ул. Тест, 1", "ул. Иная, 2"],
+                "rooms": [2, 2, 3],
+                "floor": [5, 5, 9],
+                "price": [10_000_000, 10_050_000, 25_000_000],
+                "total_area": [50.0, 50.0, 90.0],
+                "latitude": [None, None, None],
+                "longitude": [None, None, None],
+            }
+        )
+        g = build_location_groups(df)
+        assert g.iloc[0] == g.iloc[1]  # near-dup pair
+        assert g.iloc[2] != g.iloc[0]
+
+    def test_groupshufflesplit_never_splits_a_building(self):
+        from sklearn.model_selection import GroupShuffleSplit
+
+        from src.data.schema import build_location_groups
+
+        df = self._df()
+        g = build_location_groups(df)
+        gss = GroupShuffleSplit(n_splits=1, test_size=0.4, random_state=1)
+        tr, te = next(gss.split(df, groups=g))
+        assert not (set(g.iloc[tr]) & set(g.iloc[te]))
+
+
 class TestStrictMode:
     def test_strict_raises_on_error(self):
         df = _valid_df()

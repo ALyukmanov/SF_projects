@@ -57,6 +57,7 @@ import numpy as np
 import pandas as pd
 
 from src.features.feature_engineering import FeatureEngineer
+from src.features.geo_features import GeoFeatureBuilder, coverage_report
 from src.preprocessing.cleaner import DataCleaner
 from src.preprocessing.economic_features import EconomicFeatureEngineer
 from src.preprocessing.imputer import GroupMedianImputer
@@ -160,9 +161,18 @@ def _load_restate_data(interim_dir: Path) -> pd.DataFrame | None:
     """
     if not interim_dir.exists():
         return None
-    csv_paths = sorted(interim_dir.glob("restate_*_listings.csv"))
-    if not csv_paths:
+
+    # Prefer the coordinate-enriched copies (restate_<city>_listings_geo.csv,
+    # written by scripts/enrich_coordinates.py) over the plain ones, per city,
+    # so latitude/longitude reach the training pipeline. Falls back to the
+    # plain file for any city that has not been through coordinate enrichment.
+    plain = sorted(interim_dir.glob("restate_*_listings.csv"))
+    if not plain:
         return None
+    csv_paths = []
+    for p in plain:
+        geo = p.with_name(p.stem + "_geo.csv")
+        csv_paths.append(geo if geo.is_file() else p)
 
     frames = []
     for p in csv_paths:
@@ -189,6 +199,16 @@ def main() -> None:
         "--output",
         default=str(_PROJECT_ROOT / "data" / "processed"),
         help="Directory to write the engineered CSV (default: data/processed/)",
+    )
+    parser.add_argument(
+        "--skip-geo",
+        action="store_true",
+        help=(
+            "Skip the OpenStreetMap geo-feature step (nearest-POI distances / "
+            "counts from data/external/osm_poi.csv). Geo features are added "
+            "automatically when that file exists; use this to reproduce the "
+            "pre-geo feature set."
+        ),
     )
     parser.add_argument(
         "--allow-synthetic",
@@ -281,6 +301,31 @@ def main() -> None:
     eco_eng = EconomicFeatureEngineer(use_api=False)
     df = eco_eng.add_economic_features(df)
     logger.info("Economic features added.")
+
+    # ------------------------------------------------------------------
+    # Step 3b: Geo features from OpenStreetMap POI (nearest-POI distances +
+    # counts within a radius, per city). Like the economic features these are
+    # an external reference join with nothing fitted from the listings, so
+    # computing them here — before any split — is leakage-free. Listings
+    # without coordinates keep the columns with sentinel distances / zero
+    # counts and has_coordinates=0 (never dropped). Skipped automatically if
+    # data/external/osm_poi.csv is absent, or with --skip-geo.
+    # ------------------------------------------------------------------
+    geo_builder = None if args.skip_geo else GeoFeatureBuilder()
+    if geo_builder is not None and geo_builder.available:
+        logger.info("Adding OSM geo features | deduped POI counts=%s", geo_builder.poi_summary())
+        df = geo_builder.transform(df)
+        logger.info(
+            "Geo feature coverage:\n%s",
+            coverage_report(df).to_string(index=False),
+        )
+    elif args.skip_geo:
+        logger.info("--skip-geo: OSM geo features not added.")
+    else:
+        logger.warning(
+            "data/external/osm_poi.csv not found — geo features not added. "
+            "Run scripts/prepare_osm_poi.py first if you want them."
+        )
 
     if "is_synthetic" not in df.columns:
         df["is_synthetic"] = is_synthetic

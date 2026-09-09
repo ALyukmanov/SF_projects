@@ -119,6 +119,28 @@ class PredictionRequest(BaseModel):
         description="Year the building was constructed",
         examples=[2010],
     )
+    latitude: Optional[float] = Field(
+        None,
+        ge=-90,
+        le=90,
+        description=(
+            "Listing latitude (WGS84). Optional. When the loaded model uses "
+            "OSM geo features and both latitude and longitude are given, the "
+            "API computes nearest-POI distances / radius counts from the "
+            "local osm_poi.csv exactly as the training pipeline did. Omit "
+            "both and the request is scored with has_coordinates=0 and "
+            "sentinel geo values, the same way coordinate-less listings were "
+            "handled at training time."
+        ),
+        examples=[55.7539],
+    )
+    longitude: Optional[float] = Field(
+        None,
+        ge=-180,
+        le=180,
+        description="Listing longitude (WGS84). Optional; see latitude.",
+        examples=[37.6208],
+    )
     property_category: Optional[str] = Field(
         None,
         description=(

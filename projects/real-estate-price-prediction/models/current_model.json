@@ -1,11 +1,11 @@
 {
-  "filename": "xgboost_20260827_131014.pkl",
+  "filename": "xgboost_20260909_112549.pkl",
   "model_type": "xgboost",
-  "trained_at": "2026-08-27T13:10:14.538597",
+  "trained_at": "2026-09-09T11:25:48.957233",
   "is_synthetic": false,
   "data_source": "restate",
   "feature_schema_version": "2.0",
-  "split_strategy": "group_aware_80_20_random_state_42",
+  "split_strategy": "location_grouped_80_20_random_state_42",
   "dataset_path": "data\\processed\\real_estate_cleaned.csv",
   "hyperparameters": {
     "n_estimators": 600,
@@ -16,16 +16,16 @@
     "min_child_weight": 4,
     "reg_lambda": 4.042102593026443
   },
-  "tuned_from_study": "xgboost",
+  "tuned_from_study": "current_model.json (manifest reuse)",
   "metrics": {
-    "mae": 5012051.66574692,
-    "rmse": 11144284.195039736,
-    "r2": 0.7314720509137774,
-    "mape": 20.84135893845945
+    "mae": 5909112.663492707,
+    "rmse": 10198551.147380842,
+    "r2": 0.7199655812155037,
+    "mape": 23.77346829140603
   },
-  "artifact_sha256": "8c8153a35b2390a886d41b3b94fcd703f9348b38681390f096dd6f44669faa4c",
-  "set_current_at": "2026-08-27T18:50:57.467526",
+  "artifact_sha256": "f86e7707ec75d5ec96481440e3409a22c4aae4e552239b630d2184247540ecf0",
+  "set_current_at": "2026-09-09T11:29:56.019556",
   "promoted_by": "scripts/promote_model.py",
-  "promoted_from_git_revision": "80c7029",
-  "previous_current_filename": "linear_regression_synthetic_20260729_094913.pkl"
+  "promoted_from_git_revision": "d17d27a",
+  "previous_current_filename": "xgboost_20260827_131014.pkl"
 }

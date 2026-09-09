@@ -362,6 +362,81 @@ def build_split_groups(df: pd.DataFrame) -> pd.Series:
     return groups
 
 
+def build_location_groups(df: pd.DataFrame, coord_decimals: int = 4) -> pd.Series:
+    """Return a *building-level* group-id Series for
+    ``GroupShuffleSplit``/``GroupKFold`` — stricter than
+    :func:`build_split_groups`.
+
+    Two rows share a location group when EITHER
+
+    * they are near-duplicate listings (:func:`build_split_groups` — the
+      same listing re-posted, or two listings with the same
+      address+rooms+floor and price/area within 2%), OR
+    * both carry coordinates that round to the same
+      ``(latitude, longitude)`` at ``coord_decimals`` places.
+
+    ``coord_decimals=4`` is ~11 m. The restate.ru listing pages emit
+    coordinates at **at most 4 decimal places** (this dataset: 90% of
+    coordinate rows are 4-dp, the rest 3-dp or coarser), so this is not a
+    lossy down-round: it groups at the granularity the source geocoder
+    actually resolves, which is the building / address point. Listings in
+    the same building therefore always land on the same side of a split.
+
+    Rows without coordinates keep their :func:`build_split_groups` id
+    (listing / near-duplicate level). These are ~8% of this dataset and
+    also cannot carry OSM geo features (``has_coordinates=0``), so any
+    residual same-building pairing among them affects a geo model and its
+    pre-geo baseline equally and does not inflate the measured geo uplift.
+
+    Returns:
+        A ``str`` Series, one group id per row of *df*, indexed like *df*.
+    """
+    base = build_split_groups(df).astype(str)
+    if "latitude" not in df.columns or "longitude" not in df.columns:
+        return base
+
+    lat = pd.to_numeric(df["latitude"], errors="coerce").round(coord_decimals)
+    lon = pd.to_numeric(df["longitude"], errors="coerce").round(coord_decimals)
+    has_coord = lat.notna() & lon.notna()
+    if not has_coord.any():
+        return base
+
+    # Union-find over row positions: connect rows sharing a base group and
+    # rows sharing a rounded coordinate, then relabel by component root.
+    n = len(df)
+    parent = list(range(n))
+
+    def find(i: int) -> int:
+        root = i
+        while parent[root] != root:
+            root = parent[root]
+        while parent[i] != root:
+            parent[i], i = root, parent[i]
+        return root
+
+    def union(i: int, j: int) -> None:
+        ri, rj = find(i), find(j)
+        if ri != rj:
+            parent[ri] = rj
+
+    pos = {idx: p for p, idx in enumerate(df.index)}
+    for _key, members in base.groupby(base).groups.items():
+        it = iter(members)
+        first = pos[next(it)]
+        for m in it:
+            union(first, pos[m])
+
+    coord_key = lat.astype("string") + "," + lon.astype("string")
+    for _key, members in coord_key[has_coord].groupby(coord_key[has_coord]).groups.items():
+        it = iter(members)
+        first = pos[next(it)]
+        for m in it:
+            union(first, pos[m])
+
+    roots = [find(p) for p in range(n)]
+    return pd.Series([f"loc_{r}" for r in roots], index=df.index)
+
+
 # ---------------------------------------------------------------------------
 # Small internal helpers
 # ---------------------------------------------------------------------------

@@ -61,10 +61,10 @@ def main() -> None:
     df = pd.read_csv(csv_path)
 
     # Split -> impute (train-only) -> featurize, same leakage-safe pipeline
-    # as the actual candidate (src/data/split_pipeline.py) -- so this
-    # comparison reflects the SAME holdout the promoted candidate is judged
-    # on, not a separately-imputed one.
-    split_result = split_impute_featurize(df, split_strategy="group", random_state=_RANDOM_SEED)
+    # as the actual candidate (src/data/split_pipeline.py) -- 'location'
+    # (building-level groups), the SAME holdout the promotion candidate is
+    # judged on.
+    split_result = split_impute_featurize(df, split_strategy="location", random_state=_RANDOM_SEED)
     X_train, X_test = split_result.X_train, split_result.X_test
     y_log_train = split_result.y_train
 
@@ -121,8 +121,9 @@ def main() -> None:
     # ------------------------------------------------------------------
     # ML candidate: tuned xgboost, log1p target, same split (reference)
     # ------------------------------------------------------------------
-    study_path = _PROJECT_ROOT / "reports" / "tuning_study_real.json"
-    xgb_params = json.loads(study_path.read_text(encoding="utf-8"))["xgboost"]["best_params"]
+    from scripts._tuned_params import load_tuned_xgb_params
+
+    xgb_params, _params_source = load_tuned_xgb_params()
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)

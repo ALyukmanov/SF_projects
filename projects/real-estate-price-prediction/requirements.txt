@@ -26,6 +26,17 @@ pyarrow==23.0.1          # PINNED 2026-08-27 — an unpinned
 
 # Data Collection & Web Scraping
 requests==2.32.5        # verified 2026-07-27
+# requests picks its charset backend at import time: it prefers
+# charset-normalizer (pulled in as a requests dependency, 3.4.x — inside the
+# range requests 2.32.5 supports) and only falls back to `chardet` if that
+# package also happens to be importable. A stray standalone `chardet` 7.x
+# (nothing in this project depends on it) is outside requests 2.32.5's
+# hard-coded "chardet < 6" check and makes every `import requests` print
+# `RequestsDependencyWarning: ... chardet ... doesn't match a supported
+# version`. It is only a warning — decoding still works via
+# charset-normalizer — but keep `chardet` out of the environment so it stays
+# quiet. Do NOT add chardet here.
+charset-normalizer==3.4.4  # requests' charset backend (also a transitive dep); pinned to keep it the one requests uses
 beautifulsoup4==4.14.3  # verified 2026-07-27
 selenium==4.16.0        # UNVERIFIED (not installed/import-tested)
 webdriver-manager==4.0.1  # UNVERIFIED
@@ -49,9 +60,6 @@ brotli==1.1.0           # ADDED 2026-07-29 — real bug found and fixed, see bel
 # src/data_collection/README.md "Site-liveness" for that separate,
 # unrelated finding).
 
-# Telegram Bot
-python-telegram-bot==20.7  # UNVERIFIED (not installed/import-tested)
-
 # Visualization (dashboard)
 plotly==6.8.0            # verified 2026-07-27
 
@@ -65,6 +73,13 @@ catboost==1.2.10          # verified 2026-08-26 (model benchmark, scripts/compar
 optuna==4.9.0             # ADDED 2026-08-26 (hyperparameter tuning, scripts/tune_models_real.py)
                           # -- honest protocol: train->GroupKFold CV on train only->select->single
                           # held-out test evaluation
+
+# Geospatial (POI features)
+# Only needed to run scripts/prepare_osm_poi.py, which parses OSM .pbf
+# extracts into data/external/osm_poi.csv. Pulls in geopandas + shapely.
+# UNVERIFIED here (needs network to install/run); on Windows use
+# `conda install -c conda-forge pyrosm` if the pip build fails.
+pyrosm==0.6.2            # UNVERIFIED
 
 # Web Application & API
 streamlit==1.38.0        # bumped from 1.29.0 — verified 2026-07-29 via `pip install --dry-run`

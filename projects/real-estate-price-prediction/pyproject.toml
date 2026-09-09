@@ -42,5 +42,3 @@ combine-as-imports = true
 # Tests do sys.path.insert() for import resolution — E402 is intentional
 "tests/*.py" = ["E402"]
 "tests/**/*.py" = ["E402"]
-# Telegram bot has env-dependent imports after dotenv load
-"telegram_bot/bot.py" = ["E402"]

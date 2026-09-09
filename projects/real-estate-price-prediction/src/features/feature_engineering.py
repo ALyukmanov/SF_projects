@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+from src.features.geo_features import GEO_FEATURE_COLUMNS
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -114,7 +115,15 @@ _OPTIONAL_NUMERIC_FEATURES: List[str] = [
     # NOTE: price_per_sqm intentionally excluded — it is derived from the
     # target (price / area) and would constitute data leakage in training.
     # It is computed and kept in the DataFrame for EDA only.
-]
+] + list(GEO_FEATURE_COLUMNS)
+# GEO_FEATURE_COLUMNS (has_coordinates + nearest-POI distances + radius counts,
+# from src/features/geo_features.py) are "optional" in the same sense as the
+# macro columns above: used as model inputs only when present in the frame
+# (they are added by scripts/run_feature_engineering_real.py when
+# data/external/osm_poi.csv exists). They are an external OSM reference join
+# with nothing fitted from the listings, so their presence does not affect
+# leakage safety. Listings without coordinates carry sentinel/zero values plus
+# has_coordinates=0, so no NaN reaches training from them.
 
 _TARGET_COLUMN = "price"
 

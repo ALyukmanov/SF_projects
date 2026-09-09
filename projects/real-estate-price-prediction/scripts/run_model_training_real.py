@@ -119,6 +119,51 @@ def _git_commit_short() -> str | None:
     return None
 
 
+def _geo_lineage(df: pd.DataFrame, feature_names: list[str]) -> dict:
+    """Geo-enrichment provenance for the artefact metadata.
+
+    ``geo_enabled`` is driven by the model's actual ``feature_names`` (the
+    ground truth), not just by columns being present in the frame.
+    ``osm_poi_manifest`` echoes data/external/osm_poi_manifest.json's
+    generation timestamp + source extracts so a served model records which
+    OSM snapshot its geo features came from.
+    """
+    from src.features.geo_features import GEO_FEATURE_COLUMNS
+
+    geo_enabled = any(c in feature_names for c in GEO_FEATURE_COLUMNS)
+    coverage = None
+    if "has_coordinates" in df.columns:
+        n = int(len(df))
+        hc = pd.to_numeric(df["has_coordinates"], errors="coerce")
+        with_coords = int((hc == 1).sum())
+        coverage = {
+            "rows": n,
+            "with_coordinates": with_coords,
+            "coordinate_coverage_pct": round(100.0 * with_coords / n, 2) if n else None,
+        }
+    manifest_path = _PROJECT_ROOT / "data" / "external" / "osm_poi_manifest.json"
+    osm_manifest = None
+    if manifest_path.is_file():
+        try:
+            m = json.loads(manifest_path.read_text(encoding="utf-8"))
+            osm_manifest = {
+                "generated_at": m.get("generated_at"),
+                "row_count": m.get("row_count"),
+                "counts_by_category": m.get("counts_by_category"),
+                "sources": [
+                    {"city": s.get("city"), "file": s.get("file"), "sha256": s.get("sha256")}
+                    for s in m.get("sources", [])
+                ],
+            }
+        except Exception:  # noqa: BLE001
+            osm_manifest = {"error": "osm_poi_manifest.json present but unreadable"}
+    return {
+        "geo_enabled": geo_enabled,
+        "coordinate_coverage": coverage,
+        "osm_poi_manifest": osm_manifest,
+    }
+
+
 def _build_lineage_metadata(
     df: pd.DataFrame,
     resolved_data_source: str,
@@ -132,6 +177,7 @@ def _build_lineage_metadata(
     split_strategy: str,
     trainer_params: dict,
     params_from_study: str | None,
+    feature_names: "list[str] | tuple[str, ...]" = (),
 ) -> dict:
     """Assemble the full lineage/provenance dict embedded in a saved artefact.
 
@@ -171,6 +217,7 @@ def _build_lineage_metadata(
         },
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
         "git_commit": _git_commit_short(),
+        **_geo_lineage(df, feature_names),
     }
 
 
@@ -247,15 +294,16 @@ def main() -> None:
     )
     parser.add_argument(
         "--split-strategy",
-        choices=["random", "group"],
-        default="random",
+        choices=["random", "group", "location"],
+        default="location",
         help=(
-            "'random' (default, backward-compatible with earlier training runs): plain "
-            "80/20 train_test_split(random_state=42). 'group': GroupShuffleSplit keeping "
-            "near-duplicate listings entirely in train or test (see "
-            "src.data.schema.build_split_groups -- 37.5%% "
-            "of near-duplicate groups leak across a plain random split on this project's "
-            "real dataset) -- recommended for any real-data candidate meant for promotion."
+            "'location' (default): GroupShuffleSplit on building-level groups "
+            "(src.data.schema.build_location_groups) -- every listing sharing a "
+            "rounded coordinate stays on one side. This is the honest evaluation "
+            "for the geo model and the strategy behind the current promotion "
+            "candidate. 'group': only near-duplicate listings isolated "
+            "(src.data.schema.build_split_groups) -- more optimistic once "
+            "coordinates exist. 'random': plain 80/20, diagnostic only."
         ),
     )
     parser.add_argument(
@@ -268,6 +316,17 @@ def main() -> None:
             "instead of using --model's untuned defaults. MODEL_NAME must match both "
             "--model and a key in the study file (e.g. --model xgboost "
             "--params-from-study xgboost)."
+        ),
+    )
+    parser.add_argument(
+        "--params-from-manifest",
+        action="store_true",
+        help=(
+            "Reuse the hyperparameters recorded in models/current_model.json. Use this "
+            "when the geo-feature evaluation showed the currently-promoted "
+            "hyperparameters still generalise best and re-tuning did not beat them "
+            "(see reports/geo_final_candidates.json). Mutually exclusive with "
+            "--params-from-study."
         ),
     )
     parser.add_argument(
@@ -391,6 +450,28 @@ def main() -> None:
     # Step 3b: Optionally load tuned hyperparameters from a prior study
     # ------------------------------------------------------------------
     trainer_params: dict = {}
+    if args.params_from_study and args.params_from_manifest:
+        print(
+            "ERROR: pass only one of --params-from-study / --params-from-manifest.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+    if args.params_from_manifest:
+        manifest_path = models_dir / "current_model.json"
+        if not manifest_path.is_file():
+            print(
+                f"ERROR: --params-from-manifest passed but {manifest_path} does not exist.",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        trainer_params = dict(manifest.get("hyperparameters") or {})
+        if not trainer_params:
+            print(
+                f"ERROR: {manifest_path} has no 'hyperparameters' to reuse.", file=sys.stderr
+            )
+            raise SystemExit(2)
+        logger.info("Reusing hyperparameters from %s: %s", manifest_path, trainer_params)
     if args.params_from_study:
         study_path = _PROJECT_ROOT / "reports" / "tuning_study_real.json"
         if not study_path.exists():
@@ -459,7 +540,11 @@ def main() -> None:
         training_end=training_end,
         split_strategy=split_strategy,
         trainer_params=trainer_params,
-        params_from_study=args.params_from_study,
+        params_from_study=(
+            args.params_from_study
+            or ("current_model.json (manifest reuse)" if args.params_from_manifest else None)
+        ),
+        feature_names=split_result.feature_names,
     )
     # Persist the train-fit imputer so inference/re-evaluation can reuse the
     # exact same fill values instead of recomputing them from whatever data

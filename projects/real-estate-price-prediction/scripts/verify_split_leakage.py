@@ -34,7 +34,11 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import GroupShuffleSplit, train_test_split
 from xgboost import XGBRegressor
 
-from src.data.schema import build_split_groups, find_near_duplicate_candidates
+from src.data.schema import (
+    build_location_groups,
+    build_split_groups,
+    find_near_duplicate_candidates,
+)
 from src.data.split_pipeline import split_impute_featurize
 from src.preprocessing.imputer import GroupMedianImputer
 
@@ -123,14 +127,51 @@ def main() -> None:
     )
 
     # ------------------------------------------------------------------
+    # 1b. Location-grouped split: near-duplicate groups AND same-building
+    #     (rounded-coordinate) groups must not cross. This is the strict
+    #     split behind the geo model's honest evaluation.
+    # ------------------------------------------------------------------
+    loc_groups = build_location_groups(df)
+    gss_loc = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    loc_train_idx, loc_test_idx = next(gss_loc.split(df, groups=loc_groups))
+    loc_train_set = set(df.index[loc_train_idx])
+    loc_test_set = set(df.index[loc_test_idx])
+
+    crossing_location_neardup = 0
+    if not cands.empty:
+        for _, sub in cands.groupby("group_id"):
+            di = sub["df_index"].tolist()
+            if any(i in loc_train_set for i in di) and any(i in loc_test_set for i in di):
+                crossing_location_neardup += 1
+
+    crossing_location_coord = 0
+    n_coord_clusters = 0
+    if "latitude" in df.columns and "longitude" in df.columns:
+        lat = pd.to_numeric(df["latitude"], errors="coerce").round(4)
+        lon = pd.to_numeric(df["longitude"], errors="coerce").round(4)
+        has = lat.notna() & lon.notna()
+        ck = pd.Series(list(zip(lat[has], lon[has])), index=df.index[has])
+        for _, idx in ck.groupby(ck).groups.items():
+            n_coord_clusters += 1
+            idx = list(idx)
+            if any(i in loc_train_set for i in idx) and any(i in loc_test_set for i in idx):
+                crossing_location_coord += 1
+    print(
+        f"Location split: {crossing_location_neardup}/{total_groups} near-dup groups and "
+        f"{crossing_location_coord}/{n_coord_clusters} same-coordinate (building) clusters "
+        f"span train+test (expected 0 / 0)"
+    )
+
+    # ------------------------------------------------------------------
     # 2. Same tuned hyperparameters, evaluated under both split strategies —
     #    each split independently runs the full leakage-safe pipeline
     #    (its own train-only imputer fit + featurization), not a shared X/y
     #    built before the split.
     # ------------------------------------------------------------------
-    study_path = _PROJECT_ROOT / "reports" / "tuning_study_real.json"
-    best_params = json.loads(study_path.read_text(encoding="utf-8"))["xgboost"]["best_params"]
-    print(f"Using tuned xgboost params from {study_path.name}: {best_params}")
+    from scripts._tuned_params import load_tuned_xgb_params
+
+    best_params, params_source = load_tuned_xgb_params()
+    print(f"Using xgboost params from {params_source}: {best_params}")
 
     def _fit_eval(split_strategy: str) -> dict:
         split_result = split_impute_featurize(df, split_strategy=split_strategy, random_state=42)
@@ -152,6 +193,9 @@ def main() -> None:
 
     metrics_group = _fit_eval("group")
     print(f"Group-aware split, tuned params: {metrics_group}")
+
+    metrics_location = _fit_eval("location")
+    print(f"Location split (PRIMARY), tuned params: {metrics_location}")
 
     # ------------------------------------------------------------------
     # 3. Imputation fit-scope: prove the train split's fill values do not
@@ -199,10 +243,18 @@ def main() -> None:
         "groups_crossing_random_split": int(crossing_random),
         "groups_crossing_random_split_pct": pct_random,
         "groups_crossing_group_aware_split": int(crossing_group),
+        "groups_crossing_location_split": {
+            "near_duplicate_groups": int(crossing_location_neardup),
+            "same_coordinate_building_clusters": int(crossing_location_coord),
+            "same_coordinate_building_clusters_total": int(n_coord_clusters),
+        },
         "tuned_xgboost_params": best_params,
+        "xgboost_params_source": params_source,
         "metrics_random_split": metrics_random,
         "metrics_group_aware_split": metrics_group,
+        "metrics_location_split": metrics_location,
         "r2_gap_random_minus_group": round(metrics_random["r2"] - metrics_group["r2"], 4),
+        "r2_gap_group_minus_location": round(metrics_group["r2"] - metrics_location["r2"], 4),
         "imputer_fit_scope": {
             "invariant_to_holdout_mutation": imputer_invariant_to_holdout,
             "train_vs_full_dataset_global_medians": imputation_leak_magnitude,
@@ -214,10 +266,10 @@ def main() -> None:
             ),
         },
         "conclusion": (
-            "Group-aware split is materially more conservative; treated as the primary "
-            "evaluation methodology."
-            if metrics_random["r2"] > metrics_group["r2"] + 0.005
-            else "Random and group-aware splits give comparable metrics on this dataset/model."
+            "Location-grouped split (building-level) is the strictest and is the primary "
+            "evaluation for the geo model. Random > group-aware > location in optimism "
+            "(R2 %.3f -> %.3f -> %.3f)."
+            % (metrics_random["r2"], metrics_group["r2"], metrics_location["r2"])
         ),
     }
     out_path = _PROJECT_ROOT / "reports" / "leakage_reverification_real.json"

@@ -23,6 +23,7 @@ from src.features.feature_engineering import (
     FeatureEngineer,
     one_hot_fixed_categories,
 )
+from src.features.geo_features import GEO_FEATURE_COLUMNS, GeoFeatureBuilder
 from src.preprocessing.imputer import GroupMedianImputer
 from src.utils.logger import get_logger
 
@@ -148,8 +149,53 @@ class Predictor:
         self._artifact_metadata: Dict[str, Any] = {}
         self._is_loaded: bool = False
         self._imputer: Optional[GroupMedianImputer] = None
+        self._geo_builder: Optional[GeoFeatureBuilder] = None
+        self._geo_unavailable: bool = False
 
         logger.info("Predictor initialised | model_path=%s", self._model_path)
+
+    @property
+    def _expects_geo_features(self) -> bool:
+        """True when the loaded model's feature list contains OSM geo columns."""
+        return any(c in self._feature_names for c in GEO_FEATURE_COLUMNS)
+
+    def _check_geo_dependency(self) -> None:
+        """If the loaded model expects OSM geo features, the local
+        ``osm_poi.csv`` must be present — detected here at load time, not
+        mysteriously on the first ``/predict``. A pre-geo model needs no
+        OSM data and this is a no-op for it.
+        """
+        self._geo_unavailable = False
+        if not self._expects_geo_features:
+            return
+        self._geo_builder = GeoFeatureBuilder()
+        if not self._geo_builder.available:
+            self._geo_unavailable = True
+            logger.error(
+                "Loaded model uses OSM geo features but the POI table (%s) is missing or "
+                "empty. /predict will return a clear error until it is built: "
+                "run `python scripts/prepare_osm_poi.py`.",
+                self._geo_builder.poi_csv,
+            )
+
+    def _geo_feature_dict(self, features: Dict[str, Any]) -> Dict[str, float]:
+        """Compute the geo feature columns for a single live request.
+
+        Uses ``latitude``/``longitude`` from the request if present, matched
+        against the local ``osm_poi.csv`` the same way the training pipeline
+        did. With no coordinates (or no POI table) every listing falls to the
+        sentinel/zero row with ``has_coordinates=0`` — identical to how
+        coordinate-less listings were treated at training time.
+        """
+        if self._geo_builder is None:
+            self._geo_builder = GeoFeatureBuilder()
+        row = {
+            "city": features.get("city", ""),
+            "latitude": features.get("latitude"),
+            "longitude": features.get("longitude"),
+        }
+        out = self._geo_builder.transform(pd.DataFrame([row])).iloc[0]
+        return {col: float(out[col]) for col in GEO_FEATURE_COLUMNS}
 
     # ------------------------------------------------------------------
     # Loading
@@ -195,11 +241,13 @@ class Predictor:
             self._imputer = GroupMedianImputer.from_dict(artefact.get("imputer"))
             self._is_loaded = True
             self._warn_on_sklearn_version_mismatch()
+            self._check_geo_dependency()
             logger.info(
-                "Model loaded from %s | type=%s | trained_at=%s",
+                "Model loaded from %s | type=%s | trained_at=%s | geo=%s",
                 latest,
                 self._model_type,
                 self._trained_at,
+                self._expects_geo_features,
             )
             return True
         except Exception as exc:
@@ -304,6 +352,13 @@ class Predictor:
               or ``"demo_heuristic_fixed_fraction"``)
             - ``mode``        — ``'model'`` or ``'demo'``
         """
+        if self._is_loaded and self._geo_unavailable:
+            raise RuntimeError(
+                "The loaded model uses OSM geo features, but the POI table "
+                "(data/external/osm_poi.csv) is missing. Build it with "
+                "`python scripts/prepare_osm_poi.py`, or point current_model.json "
+                "at a pre-geo artefact."
+            )
         if self._is_loaded and self._model is not None:
             result = self._predict_with_model(features)
         else:
@@ -502,6 +557,13 @@ class Predictor:
 
         macro = {k: features.get(k, _MACRO_DEFAULTS[k]) for k in _MACRO_DEFAULTS}
 
+        # Geo features are only emitted when the loaded model actually expects
+        # them — otherwise this stays a no-op so the vector matches exactly
+        # what a pre-geo model was trained on (and keeps inference-parity with
+        # FeatureEngineer, which likewise only selects geo columns when the
+        # training frame carried them).
+        geo = self._geo_feature_dict(features) if self._expects_geo_features else {}
+
         return {
             "rooms": rooms,
             "total_area": total_area,
@@ -517,6 +579,7 @@ class Predictor:
             **city_ohe,
             **building_type_ohe,
             **macro,
+            **geo,
         }
 
     # ------------------------------------------------------------------
@@ -589,6 +652,10 @@ class Predictor:
             "dataset_rows": meta.get("dataset_rows"),
             "dataset_sha256": meta.get("dataset_sha256"),
             "prediction_interval": meta.get("prediction_interval", {}),
+            "geo_enabled": self._expects_geo_features,
+            "geo_poi_available": (not self._geo_unavailable) if self._expects_geo_features else None,
+            "coordinate_coverage": meta.get("coordinate_coverage"),
+            "osm_poi_manifest": meta.get("osm_poi_manifest"),
         }
 
     # ------------------------------------------------------------------

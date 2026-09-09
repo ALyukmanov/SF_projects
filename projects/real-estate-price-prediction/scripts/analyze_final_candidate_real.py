@@ -119,23 +119,17 @@ def main() -> None:
             file=sys.stderr,
         )
 
-    study_path = _PROJECT_ROOT / "reports" / "tuning_study_real.json"
-    if not study_path.exists():
-        print(
-            f"ERROR: {study_path} not found — run scripts/tune_models_real.py first.",
-            file=sys.stderr,
-        )
-        raise SystemExit(2)
-    study = json.loads(study_path.read_text(encoding="utf-8"))
-    best_params = study["xgboost"]["best_params"]
+    from scripts._tuned_params import load_tuned_xgb_params
+
+    best_params, params_source = load_tuned_xgb_params()
+    logger.info("Using xgboost params from %s: %s", params_source, best_params)
 
     df = pd.read_csv(csv_path)
     logger.info("Loaded %s: %d rows.", csv_path, len(df))
     # Split -> impute (train-only) -> featurize — see src/data/split_pipeline.py.
-    # Replaces the old "featurize the whole dataset, then split" order, which
-    # leaked holdout rows into the rooms/total_area/floor/floors_total
-    # medians.
-    split_result = split_impute_featurize(df, split_strategy="group", random_state=_RANDOM_SEED)
+    # 'location' (building-level groups) is the honest evaluation for the geo
+    # model: two flats in one building never straddle the holdout.
+    split_result = split_impute_featurize(df, split_strategy="location", random_state=_RANDOM_SEED)
     X_train, X_test = split_result.X_train, split_result.X_test
     y_train, y_test = split_result.y_train, split_result.y_test
     X = pd.concat([X_train, X_test])

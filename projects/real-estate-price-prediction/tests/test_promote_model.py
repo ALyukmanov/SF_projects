@@ -39,6 +39,12 @@ def _valid_artefact(**overrides) -> dict:
         "is_synthetic": False,
         "data_source": "restate",
         "dataset_path": "data/processed/real_estate_engineered.csv",
+        # _expected_feature_names() now includes the OSM geo columns, so a
+        # well-formed candidate is a geo candidate: it must carry a fitted
+        # imputer and the geo_enabled flag (otherwise validate_candidate
+        # emits advisory warnings).
+        "imputer": {"fitted": True, "global_median": {}, "city_median": {}},
+        "geo_enabled": True,
     }
     artefact.update(overrides)
     return artefact
@@ -168,3 +174,37 @@ class TestSyntheticPromotionGuard:
         artefact = _valid_artefact(is_synthetic=True)
         path = _save(tmp_path, artefact)
         validate_candidate(path, allow_synthetic_promotion=True)
+
+
+class TestRollback:
+    """`promote_model.py --rollback` promotes previous_current_filename."""
+
+    def _run_main(self, argv, monkeypatch, cwd):
+        import sys as _sys
+
+        from scripts import promote_model as pm
+
+        monkeypatch.setattr(_sys, "argv", ["promote_model.py", *argv])
+        monkeypatch.setattr(pm, "_MODELS_DIR", cwd / "models")
+        monkeypatch.setattr(pm, "_MANIFEST_PATH", cwd / "models" / "current_model.json")
+        monkeypatch.setattr(pm, "_PROMOTION_LOG_PATH", cwd / "reports" / "promotion_log.jsonl")
+        return pm.main()
+
+    def test_rollback_requires_previous_filename(self, tmp_path, monkeypatch):
+        (tmp_path / "models").mkdir()
+        (tmp_path / "models" / "current_model.json").write_text('{"filename": "a.pkl"}')
+        rc = self._run_main(["--rollback"], monkeypatch, tmp_path)
+        assert rc == 2  # no previous_current_filename
+
+    def test_candidate_and_rollback_are_mutually_exclusive(self, tmp_path, monkeypatch):
+        (tmp_path / "models").mkdir()
+        rc = self._run_main(["--candidate", "x.pkl", "--rollback"], monkeypatch, tmp_path)
+        assert rc == 2
+
+    def test_rollback_target_must_exist_on_disk(self, tmp_path, monkeypatch):
+        (tmp_path / "models").mkdir()
+        (tmp_path / "models" / "current_model.json").write_text(
+            '{"filename": "new.pkl", "previous_current_filename": "gone.pkl"}'
+        )
+        rc = self._run_main(["--rollback"], monkeypatch, tmp_path)
+        assert rc == 2  # target file missing

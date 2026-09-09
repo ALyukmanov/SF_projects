@@ -40,6 +40,7 @@ import joblib
 import pandas as pd
 
 from src.features.feature_engineering import FEATURE_SCHEMA_VERSION, FeatureEngineer
+from src.features.geo_features import GEO_FEATURE_COLUMNS, GeoFeatureBuilder
 from src.preprocessing.economic_features import EconomicFeatureEngineer
 from src.utils.logger import get_logger
 
@@ -65,19 +66,24 @@ class ValidationError(Exception):
     """Raised when a candidate fails a promotion check. Caught in main()."""
 
 
-def _expected_feature_names() -> List[str]:
+def _expected_feature_names(*, with_geo: bool = True) -> List[str]:
     """Derive the live feature list by replaying the real training pipeline's
-    feature-construction steps (economic enrichment, then feature
-    engineering) on a tiny synthetic frame.
+    feature-construction steps on a tiny synthetic frame.
 
-    This must mirror scripts/run_model_training_real.py's actual sequence --
-    EconomicFeatureEngineer.add_economic_features() runs BEFORE
-    FeatureEngineer.prepare_for_training(), because prepare_for_training()
-    only *selects* whichever economic columns already exist in the frame
-    (via _select_available_features); it does not add them itself. Skipping
-    that step here previously made every real candidate look like a feature
-    mismatch (23 vs 27 columns) purely from a validator bug, not an actual
-    schema problem.
+    Mirrors scripts/run_feature_engineering_real.py's actual sequence:
+    EconomicFeatureEngineer -> GeoFeatureBuilder -> FeatureEngineer. Each
+    step only *adds* columns; ``prepare_for_training`` then *selects* the
+    ones it knows about (macro + geo are "optional" — present-in-frame ->
+    used), so replaying the same sequence here is the single source of
+    truth for what a valid candidate's ``feature_names`` must be, order
+    included.
+
+    ``with_geo=True`` runs the geo step so the expected list includes the 18
+    OSM geo columns (``src.features.geo_features.GEO_FEATURE_COLUMNS``). The
+    column *set* it produces does not depend on ``data/external/osm_poi.csv``
+    being present — an unavailable POI table just yields sentinel *values*,
+    the same 18 column *names*. Pass ``with_geo=False`` only to validate a
+    legacy pre-geo artefact.
     """
     sample = pd.DataFrame(
         {
@@ -90,14 +96,29 @@ def _expected_feature_names() -> List[str]:
             "building_type": ["panel", "brick"],
             "year_built": [None, None],
             "source_category": ["1_rooms_flats_sale", "2_rooms_flats_sale"],
+            "latitude": [55.7539, 59.9311],
+            "longitude": [37.6208, 30.3609],
         }
     )
     eco_eng = EconomicFeatureEngineer(use_api=False)
     sample = eco_eng.add_economic_features(sample)
 
+    if with_geo:
+        # Only the geo column *names* matter here, not the distances — use a
+        # POI-less builder so this stays instant (no BallTree build) and does
+        # not depend on data/external/osm_poi.csv. It still adds all 18
+        # GEO_FEATURE_COLUMNS (sentinel values), which is the exact schema a
+        # real geo run produces.
+        sample = GeoFeatureBuilder(poi_csv=_PROJECT_ROOT / "does-not-exist.csv").transform(sample)
+        assert all(c in sample.columns for c in GEO_FEATURE_COLUMNS)
+
     engineer = FeatureEngineer()
     X, _ = engineer.prepare_for_training(sample)
     return list(X.columns)
+
+
+def _artefact_uses_geo(feature_names: List[str]) -> bool:
+    return any(c in feature_names for c in GEO_FEATURE_COLUMNS)
 
 
 def _load_manifest(manifest_path: Path = _MANIFEST_PATH) -> Dict[str, Any]:
@@ -180,14 +201,34 @@ def validate_candidate(
     if len(feature_names) != len(set(feature_names)):
         raise ValidationError("Candidate feature_names contains duplicates.")
 
-    expected_features = _expected_feature_names()
+    uses_geo = _artefact_uses_geo(feature_names)
+    expected_features = _expected_feature_names(with_geo=uses_geo)
     if feature_names != expected_features:
         raise ValidationError(
-            "Candidate feature_names does not match the live FeatureEngineer output "
-            f"(order-sensitive). Candidate has {len(feature_names)} features, live "
-            f"schema has {len(expected_features)}. Candidate={feature_names} "
+            "Candidate feature_names does not match the live pipeline output "
+            f"(order-sensitive, with_geo={uses_geo}). Candidate has {len(feature_names)} "
+            f"features, live schema has {len(expected_features)}. Candidate={feature_names} "
             f"Expected={expected_features}"
         )
+
+    if uses_geo:
+        missing_geo = [c for c in GEO_FEATURE_COLUMNS if c not in feature_names]
+        if missing_geo:
+            raise ValidationError(
+                f"Candidate uses geo features but is missing some of them: {missing_geo}. "
+                "A partial geo feature set means training and the live GeoFeatureBuilder "
+                "disagree on the schema."
+            )
+        if artefact.get("imputer") is None:
+            warnings.append(
+                "Geo candidate has no persisted imputer — inference would fall back to "
+                "hardcoded rooms/area/floor defaults instead of the train-fit medians."
+            )
+        if not artefact.get("geo_enabled"):
+            warnings.append(
+                "Geo candidate metadata has no geo_enabled=true flag (informational; "
+                "feature_names already prove geo is in use)."
+            )
 
     metrics = artefact["metrics"]
     if not isinstance(metrics, dict):
@@ -237,6 +278,17 @@ def validate_candidate(
             warnings.append(
                 "Candidate is already the current promoted model -- this is a no-op re-promotion."
             )
+        cur_split = current.get("split_strategy")
+        new_split = artefact.get("split_strategy")
+        splits_differ = cur_split and new_split and cur_split != new_split
+        if splits_differ:
+            warnings.append(
+                f"Split methodology changed: current model was evaluated under "
+                f"'{cur_split}', candidate under '{new_split}'. The metric comparison below "
+                "is therefore NOT like-for-like — re-evaluate both on the same split before "
+                "reading a metric regression as real (a stricter split legitimately produces "
+                "larger errors)."
+            )
         current_metrics = current.get("metrics") or {}
         for key in ("mae", "rmse", "r2"):
             cur_val = current_metrics.get(key)
@@ -244,9 +296,10 @@ def validate_candidate(
             if cur_val is not None and new_val is not None:
                 worse = (new_val > cur_val) if key in ("mae", "rmse") else (new_val < cur_val)
                 if worse:
+                    qualifier = " (different split — see note above)" if splits_differ else ""
                     warnings.append(
                         f"Candidate {key}={new_val} is worse than current promoted "
-                        f"{key}={cur_val} ({current.get('filename')})."
+                        f"{key}={cur_val} ({current.get('filename')}){qualifier}."
                     )
         if bool(current.get("is_synthetic")) != bool(is_synthetic):
             warnings.append(
@@ -314,7 +367,19 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "--candidate", required=True, help="Path to the candidate .pkl artefact (in models/)."
+        "--candidate",
+        help="Path to the candidate .pkl artefact (in models/). Omit only with --rollback.",
+    )
+    parser.add_argument(
+        "--rollback",
+        action="store_true",
+        help=(
+            "Promote the artefact named by current_model.json's "
+            "'previous_current_filename' — the one that was active before the last "
+            "promotion. Runs the same fail-closed validation. After a rollback the "
+            "'previous_current_filename' points back at the model you rolled away "
+            "from, so a second --rollback returns to it."
+        ),
     )
     parser.add_argument(
         "--dry-run",
@@ -328,12 +393,36 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    candidate_path = Path(args.candidate)
-    if not candidate_path.is_absolute():
-        candidate_path = _PROJECT_ROOT / candidate_path
+    if args.rollback == bool(args.candidate):
+        print("ERROR: pass exactly one of --candidate <path> or --rollback.", file=sys.stderr)
+        return 2
+
+    if args.rollback:
+        current = _load_manifest(_MANIFEST_PATH)
+        prev = current.get("previous_current_filename")
+        if not prev:
+            print(
+                "ERROR: current_model.json has no 'previous_current_filename' — nothing to "
+                "roll back to.",
+                file=sys.stderr,
+            )
+            return 2
+        candidate_path = _MODELS_DIR / prev
+        if not candidate_path.is_file():
+            print(
+                f"ERROR: rollback target '{prev}' is not present under {_MODELS_DIR}. The "
+                "previous artefact was deleted — restore it from git or a backup first.",
+                file=sys.stderr,
+            )
+            return 2
+        print(f"Rolling back to previous artefact: {prev}")
+    else:
+        candidate_path = Path(args.candidate)
+        if not candidate_path.is_absolute():
+            candidate_path = _PROJECT_ROOT / candidate_path
 
     print("=" * 60)
-    print("MODEL PROMOTION")
+    print("MODEL PROMOTION" + (" (ROLLBACK)" if args.rollback else ""))
     print("=" * 60)
     print(f"Candidate : {candidate_path}")
 

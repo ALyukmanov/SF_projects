@@ -14,19 +14,15 @@ Selected 2026-08-24 after live probes confirmed:
     path this scraper uses).
   - Raw HTML/robots.txt from that probe were saved as evidence at the time.
 
-Scope decision -- detail pages are NOT fetched in bulk
+Scope decision -- this scraper does not fetch detail pages
 --------------------------------------------------------
-Each individual listing detail page (`https://www.restate.ru/base/<id>.html`)
-carries `<meta name="robots" content="noindex, nofollow">`. robots.txt does
-not forbid fetching these pages, but that meta tag is a clear, deliberate
-site-owner signal that they are not meant to be crawled/indexed at scale --
-unlike the `/choice/...` search-results pages, whose rich JSON-LD markup is
-obviously built to be crawled (it is textbook SEO rich-snippet structured
-data). This scraper respects that distinction: every field it produces
-comes from the search-results JSON-LD, and fields that are genuinely only
-available on detail pages (coordinates, kitchen area, exact publish date)
-are left ``None`` rather than fetched. See the project's DATA_CARD.md /
-README.md before changing this. (`building_type` and `ceiling_height` turned
+Every field this scraper produces comes from the `/choice/...`
+search-results JSON-LD. Fields that are only on the individual listing
+pages (`https://www.restate.ru/base/<id>.html`) -- kitchen area, exact
+publish date -- are left ``None`` here. Coordinates are also only on the
+detail pages; they are filled in afterwards by the separate, slower,
+resumable `scripts/enrich_coordinates.py` (robots.txt allows `/base/`).
+(`building_type` and `ceiling_height` turned
 out NOT to be detail-page-only -- see ``normalize.py``: the search-results
 ``description`` text itself contains "тип дома: ..." / "высота потолков ..."
 for many listings, discovered 2026-08-24 while sampling live category pages.)
