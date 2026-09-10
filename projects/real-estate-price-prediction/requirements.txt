@@ -74,12 +74,13 @@ optuna==4.9.0             # ADDED 2026-08-26 (hyperparameter tuning, scripts/tun
                           # -- honest protocol: train->GroupKFold CV on train only->select->single
                           # held-out test evaluation
 
-# Geospatial (POI features)
-# Only needed to run scripts/prepare_osm_poi.py, which parses OSM .pbf
-# extracts into data/external/osm_poi.csv. Pulls in geopandas + shapely.
-# UNVERIFIED here (needs network to install/run); on Windows use
-# `conda install -c conda-forge pyrosm` if the pip build fails.
-pyrosm==0.6.2            # UNVERIFIED
+# Geospatial (POI features) — optional, install separately.
+# pyrosm is only needed to rebuild data/external/osm_poi.csv from raw OSM
+# .pbf extracts (scripts/prepare_osm_poi.py). The repo already ships
+# osm_poi.csv, so training, inference, the API and the tests do not need it.
+# Its build chain (pyrobuf) does not install cleanly on modern setuptools;
+# use `pip install pyrosm` or `conda install -c conda-forge pyrosm` if you
+# actually need to regenerate the POI table.
 
 # Web Application & API
 streamlit==1.38.0        # bumped from 1.29.0 — verified 2026-07-29 via `pip install --dry-run`

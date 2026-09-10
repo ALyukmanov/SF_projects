@@ -142,7 +142,14 @@ def _download(url: str, dest: Path, force: bool) -> None:
 
 
 def _extract_pois(pbf_path: Path, city_name: str) -> pd.DataFrame:
-    from pyrosm import OSM  # imported here so --help works without pyrosm installed
+    try:
+        from pyrosm import OSM  # imported here so --help works without pyrosm installed
+    except ImportError as exc:
+        raise SystemExit(
+            "pyrosm is not installed — it is an optional dependency needed only to "
+            "rebuild osm_poi.csv. Install it with `pip install pyrosm` "
+            "(or `conda install -c conda-forge pyrosm`)."
+        ) from exc
 
     logger.info("Reading POIs from %s (clipped to %s) ...", pbf_path.name, city_name)
     osm = OSM(str(pbf_path), bounding_box=CITY_BBOX[city_name])
