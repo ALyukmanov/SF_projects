@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "retail-recommender-system"
+version = "0.2.0"
+description = "RetailRocket recommender — EDA и подготовка признаков"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "scikit-learn>=1.3",
+    "pyarrow>=12.0",
+    "pyyaml>=6.0",
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "jupyter>=1.0", "nbclient>=0.8", "nbformat>=5.9"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "slow: тест читает исходный events.csv целиком (несколько секунд)",
+]
