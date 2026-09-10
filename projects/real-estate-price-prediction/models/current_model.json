@@ -6,7 +6,6 @@
   "data_source": "restate",
   "feature_schema_version": "2.0",
   "split_strategy": "location_grouped_80_20_random_state_42",
-  "dataset_path": "data\\processed\\real_estate_cleaned.csv",
   "hyperparameters": {
     "n_estimators": 600,
     "max_depth": 8,
@@ -16,7 +15,6 @@
     "min_child_weight": 4,
     "reg_lambda": 4.042102593026443
   },
-  "tuned_from_study": "current_model.json (manifest reuse)",
   "metrics": {
     "mae": 5909112.663492707,
     "rmse": 10198551.147380842,
@@ -24,8 +22,5 @@
     "mape": 23.77346829140603
   },
   "artifact_sha256": "f86e7707ec75d5ec96481440e3409a22c4aae4e552239b630d2184247540ecf0",
-  "set_current_at": "2026-09-09T11:29:56.019556",
-  "promoted_by": "scripts/promote_model.py",
-  "promoted_from_git_revision": "d17d27a",
-  "previous_current_filename": "xgboost_20260827_131014.pkl"
+  "set_current_at": "2026-09-09T11:29:56.019556"
 }

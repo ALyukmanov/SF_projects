@@ -17,13 +17,13 @@ Protocol (the point of this script):
                                        |
                              best params per model
 
-The FINAL HOLDOUT is **never touched here** — not for selection and not
-even for a reported number. Its single evaluation happens later, in
-scripts/compare_geo_uplift.py / scripts/analyze_final_candidate_real.py,
-against the identical location-grouped split (same seed, same test_size).
+The FINAL HOLDOUT is never touched here — not for selection and not for a
+reported number. Its single evaluation happens later, in
+scripts/compare_geo_uplift.py / scripts/analyze_model_real.py, against the
+identical location-grouped split (same seed, same test_size).
 
-xgboost is the real candidate (wide search incl. reg_alpha/reg_lambda);
-random_forest is tuned lightly only as a sanity baseline.
+xgboost gets a wide search (incl. reg_alpha/reg_lambda); random_forest is
+tuned lightly only as a sanity baseline.
 
 Writes reports/tuning_study_real.json: per model, best_params + CV metrics +
 trial/seed/split metadata. Saves no model artefact, does not touch
@@ -61,13 +61,11 @@ _RANDOM_SEED = 42
 _CV_FOLDS = 4
 _SPLIT_STRATEGY = "location"
 
-# The imputer is fit ONCE on the whole DEV split (not per CV fold). DEV never
-# includes a holdout row, so the final holdout stays clean either way; the
-# only effect is that a fold's rooms/area/floor median fill is computed over
-# ~all of DEV rather than ~3/4 of it -- a sub-0.1%% difference on this
-# dataset (356/9720 rooms, 158/9720 floor missing), not worth a 4x slower
-# search. The holdout evaluation elsewhere re-fits the imputer on its own
-# train split, so nothing about the promoted pipeline changes.
+# The imputer is fit once on the whole DEV split (not per CV fold). DEV never
+# includes a holdout row, so the holdout stays clean either way; a fold's
+# median fill is just computed over all of DEV rather than ~3/4 of it -- a
+# sub-0.1% difference on this dataset, not worth a 4x slower search. The
+# holdout evaluation elsewhere re-fits the imputer on its own train split.
 
 
 def _find_cleaned_csv(input_dir: Path) -> Path | None:
@@ -309,7 +307,9 @@ def main() -> None:
     print(f"Dataset : {csv_path} ({len(df)} rows)")
     print(f"DEV     : {len(dev_raw)} rows / {dev_groups.nunique()} location groups")
     print(f"Holdout : {len(holdout_idx)} rows RESERVED (not evaluated here)")
-    print(f"CV      : {_CV_FOLDS}-fold GroupKFold, {args.n_trials} trials/model, seed={_RANDOM_SEED}")
+    print(
+        f"CV      : {_CV_FOLDS}-fold GroupKFold, {args.n_trials} trials/model, seed={_RANDOM_SEED}"
+    )
     print()
     for model_name, s in study_summary.items():
         print(f"{model_name}:")

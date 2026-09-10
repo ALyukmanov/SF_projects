@@ -1,4 +1,4 @@
-.PHONY: install test lint train train-xgboost train-rf train-demo features demo-data api dashboard docker-up docker-down help
+.PHONY: install test lint train train-rf train-demo features demo-data api dashboard docker-up docker-down help
 
 # ── Help ────────────────────────────────────────────────────────────────────
 help:
@@ -7,8 +7,8 @@ help:
 	@echo "  make install     Install all dependencies"
 	@echo "  make test        Run unit tests (no network)"
 	@echo "  make lint        Run ruff linter"
-	@echo "  make train       Train linear_regression model on engineered data (current best per reports/model_comparison.csv; fails if no real data)"
-	@echo "  make train-xgboost  Train XGBoost instead (for comparison — NOT the production default, see MODEL_CARD.md)"
+	@echo "  make train       Train the XGBoost + geo model on engineered data (fails if no real data)"
+	@echo "  make train-rf    Train RandomForest instead (for comparison)"
 	@echo "  make demo-data   Explicitly generate SYNTHETIC demo data (data/processed/*.synthetic.csv)"
 	@echo "  make train-demo  Explicitly train on SYNTHETIC demo data (tags artefact _synthetic_)"
 	@echo "  make api         Start FastAPI server on port 8000"
@@ -34,9 +34,8 @@ lint:
 	ruff check src/ api/ dashboard/ scripts/ tests/ --fix
 
 # ── ML Pipeline ──────────────────────────────────────────────────────────────
-# `features`/`train` are fail-closed: they error out if no real data exists,
-# instead of silently generating synthetic data. Use the `demo-data`/
-# `train-demo` targets to explicitly opt into synthetic/demo data.
+# `features`/`train` error out if there is no real data, rather than quietly
+# training on synthetic data. Use `demo-data`/`train-demo` for the demo path.
 features:
 	python scripts/run_feature_engineering_real.py
 
@@ -44,16 +43,13 @@ demo-data:
 	python scripts/run_feature_engineering_real.py --allow-synthetic
 
 train:
-	python -X utf8 scripts/run_model_training_real.py --model linear_regression
-
-train-xgboost:
-	python -X utf8 scripts/run_model_training_real.py --model xgboost
+	python -X utf8 scripts/run_model_training_real.py --model xgboost --split-strategy location --params-from-manifest
 
 train-rf:
 	python -X utf8 scripts/run_model_training_real.py --model random_forest
 
 train-demo:
-	python -X utf8 scripts/run_model_training_real.py --model linear_regression --allow-synthetic
+	python -X utf8 scripts/run_model_training_real.py --model xgboost --allow-synthetic
 
 # ── Services ─────────────────────────────────────────────────────────────────
 api:

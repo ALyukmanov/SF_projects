@@ -1,19 +1,15 @@
-"""Shared helper: load XGBoost params for the diagnostic scripts.
+"""Shared helper: load XGBoost params for the comparison/diagnostic scripts.
 
 Order of preference:
-1. ``models/current_model.json`` -> ``hyperparameters`` — the *reviewed*
-   production hyperparameters. On the OSM geo feature set these still
-   generalise best (see reports/geo_final_candidates.json: geo_current_params
-   beats geo_tuned on the location holdout), so the diagnostics should
-   report the model that would actually be promoted.
-2. ``reports/tuning_study_real.json`` -> ``xgboost.best_params`` — the
-   exploratory tuning result, used only when there is no manifest.
-3. A small built-in default, so a fresh clone with neither file can still
-   run the diagnostics (with a loud warning).
+1. ``models/current_model.json`` -> ``hyperparameters`` — the current model's
+   hyperparameters.
+2. ``reports/tuning_study_real.json`` -> ``xgboost.best_params`` — the tuning
+   result, used when there is no manifest.
+3. A small built-in default, so a fresh clone with neither file can still run
+   the scripts (with a warning).
 
-This keeps ``verify_split_leakage.py`` / ``analyze_final_candidate_real.py``
-/ ``compare_baselines_real.py`` consistent with each other and from
-hard-crashing when the (git-ignored) study file has not been regenerated.
+Keeps ``verify_split_leakage.py`` / ``analyze_model_real.py`` /
+``compare_baselines_real.py`` consistent with each other.
 """
 
 from __future__ import annotations
@@ -42,7 +38,7 @@ def load_tuned_xgb_params() -> tuple[dict, str]:
             data = json.loads(manifest.read_text(encoding="utf-8"))
             params = data.get("hyperparameters")
             if isinstance(params, dict) and params:
-                return dict(params), "models/current_model.json (production hyperparameters)"
+                return dict(params), "models/current_model.json (current model hyperparameters)"
         except (json.JSONDecodeError, OSError):
             pass
 

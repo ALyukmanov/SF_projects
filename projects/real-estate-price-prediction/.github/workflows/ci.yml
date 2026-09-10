@@ -1,18 +1,7 @@
 name: CI
 
-# Python version: aligned to 3.11 to match the Dockerfile (`python:3.11-slim`).
-# requirements.txt's exact pins resolve cleanly under Python 3.11 via `pip
-# install --dry-run` — see requirements.txt's own header comment and
-# README.md "Ограничения" for exactly what is resolver-verified vs.
-# runtime-verified.
-#
-# Scope decisions:
-# - No Docker build step: a Dockerfile exists at the project root, kept out
-#   of CI to keep runtime short — see README.md "Ограничения".
-# - notebooks/01_real_estate_price_prediction.ipynb is NOT executed in CI —
-#   it takes ~1-2 minutes end-to-end and trains 4 real models + 4 baselines
-#   with 5-fold CV, which is more CI time than a lint/test gate should cost.
-#   Re-execute it manually before any release: see README.md "Запуск notebook".
+# Python 3.11 to match the Dockerfile. The notebook and Docker build are not
+# run in CI to keep it short.
 
 on:
   push:
@@ -60,8 +49,5 @@ jobs:
       - name: Compile / import smoke check (compileall)
         run: python -m compileall -q src api dashboard scripts tests
 
-      - name: Run unit tests with coverage (network-excluded by default)
-        run: |
-          pytest tests/ -v --cov=src --cov=api --cov-report=term-missing
-        # tests/integration/ is excluded by pyproject.toml's own
-        # `addopts = "--ignore=tests/integration"` — no extra flag needed here.
+      - name: Run unit tests with coverage
+        run: pytest tests/ -v --cov=src --cov=api --cov-report=term-missing

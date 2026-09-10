@@ -35,13 +35,12 @@ For the best model (lowest test MAE), additionally reports:
   - per-city MAE breakdown (when >1 city present)
   - residual summary statistics
 
-Saves reports/model_comparison_real.csv. Does NOT save any model artefact or
-touch models/current_model.json -- this script is comparison/evaluation
-only. Use `scripts/run_model_training_real.py --model <winner> [--promote]`
-to actually train+save (and, after review, promote) a chosen model.
+Saves reports/model_comparison_real.csv. Does not save a model artefact —
+this is comparison only. Use `scripts/run_model_training_real.py --model
+<name>` to train and save a chosen model.
 
-FAIL-CLOSED: refuses to run on synthetic-flagged data (comparing model
-quality on synthetic data would not be an honest real-market comparison),
+Refuses to run on synthetic-flagged data (a model comparison on synthetic
+data would not reflect the real market),
 unless --allow-synthetic is passed (e.g. to smoke-test this script itself).
 """
 
@@ -72,14 +71,12 @@ from src.utils.logger import get_logger
 
 logger = get_logger("compare_models_real")
 
-# Models ModelTrainer already builds/scales/fits (production-supported types
-# -- whichever wins here can be reproduced exactly via
-# `run_model_training_real.py --model <name>`).
+# Models ModelTrainer already builds/scales/fits -- whichever wins here can
+# be reproduced via `run_model_training_real.py --model <name>`.
 _TRAINER_BACKED_MODELS = ["linear_regression", "ridge", "random_forest", "xgboost", "catboost"]
 
 # Extra benchmark-only models: sklearn estimators with no ModelTrainer
-# support (not part of the production artefact contract, comparison only).
-# Each factory takes no arguments and returns a fresh unfitted estimator.
+# support, for comparison only. Each factory returns a fresh unfitted estimator.
 _SKLEARN_ONLY_MODELS = {
     "dummy_median": lambda: DummyRegressor(strategy="median"),
     # ElasticNetCV picks alpha via internal 5-fold CV on the training data

@@ -61,9 +61,8 @@ def main() -> None:
     df = pd.read_csv(csv_path)
 
     # Split -> impute (train-only) -> featurize, same leakage-safe pipeline
-    # as the actual candidate (src/data/split_pipeline.py) -- 'location'
-    # (building-level groups), the SAME holdout the promotion candidate is
-    # judged on.
+    # as the model (src/data/split_pipeline.py) -- 'location' (building-level
+    # groups), the same holdout the model is evaluated on.
     split_result = split_impute_featurize(df, split_strategy="location", random_state=_RANDOM_SEED)
     X_train, X_test = split_result.X_train, split_result.X_test
     y_log_train = split_result.y_train

@@ -469,12 +469,20 @@ def render_prediction_page() -> None:
             )
             if use_coords:
                 latitude = st.number_input(
-                    "Широта", min_value=-90.0, max_value=90.0, value=55.7558,
-                    step=0.0001, format="%.4f",
+                    "Широта",
+                    min_value=-90.0,
+                    max_value=90.0,
+                    value=55.7558,
+                    step=0.0001,
+                    format="%.4f",
                 )
                 longitude = st.number_input(
-                    "Долгота", min_value=-180.0, max_value=180.0, value=37.6173,
-                    step=0.0001, format="%.4f",
+                    "Долгота",
+                    min_value=-180.0,
+                    max_value=180.0,
+                    value=37.6173,
+                    step=0.0001,
+                    format="%.4f",
                 )
                 st.caption(
                     "Только Москва и Санкт-Петербург (для них есть данные OSM). Без "
@@ -900,12 +908,8 @@ def render_about_page() -> None:
     )
 
     # --- Technology stack ---
-    # "Модель МО" is derived from the LIVE Predictor, not a hardcoded
-    # algorithm name — a previous version of this page said "XGBoost" even
-    # after the production artefact was switched to linear_regression, which
-    # was a real, disclosed bug (page contradicting its own sidebar, which
-    # already showed the correct model_type). Deriving it here makes this
-    # self-correcting the next time the production artefact changes.
+    # The model name is read from the live Predictor, not hardcoded, so it
+    # stays correct if the current model changes.
     predictor = load_predictor()
     info = predictor.model_info
     _model_label = (

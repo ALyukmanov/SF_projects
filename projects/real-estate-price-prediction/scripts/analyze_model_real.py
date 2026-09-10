@@ -1,25 +1,20 @@
 """
-Deep-dive analysis of the final real-data candidate model: full metrics,
-segment breakdown, residual/error analysis, and feature importance.
+Analysis of the trained XGBoost model: full metrics, segment breakdown,
+residual/error analysis, and feature importance.
 
-Usage: python scripts/analyze_final_candidate_real.py [--input path]
+Usage: python scripts/analyze_model_real.py [--input path]
 
-Retrains the winning candidate from scripts/tune_models_real.py's study
-(reports/tuning_study_real.json — currently `xgboost`, tuned) on the same
-group-aware split, then produces:
+Retrains XGBoost with the tuned params from reports/tuning_study_real.json
+on the same group-aware split, then produces:
 
   - Full metrics: MAE, RMSE, R2, median AE, MAPE, sMAPE, RMSLE
-  - Segment metrics: by city, by property_type/source_category, by price
-    quartile, by room count, by area tier
-  - Residual analysis: distribution, systematic bias check (mean residual
-    by segment), largest absolute errors with enough context to inspect
-    WHY the model likely missed
-  - Feature importance: native (impurity/gain-based) + permutation
-    importance on the held-out test set, plus a handful of individual
-    prediction explanations
+  - Segment metrics: by city, by category, by price quartile, room count,
+    area tier
+  - Residual analysis: distribution, bias check by segment, largest errors
+  - Feature importance: gain-based + permutation on the holdout set
 
-Saves reports/final_candidate_analysis_real.json (machine-readable) and
-prints a human-readable report. Does NOT save a model artefact.
+Saves reports/model_analysis_real.json and prints a readable report. Does
+NOT save a model artefact.
 """
 
 from __future__ import annotations
@@ -43,7 +38,7 @@ from xgboost import XGBRegressor
 from src.data.split_pipeline import split_impute_featurize
 from src.utils.logger import get_logger
 
-logger = get_logger("analyze_final_candidate_real")
+logger = get_logger("analyze_model_real")
 
 _RANDOM_SEED = 42
 
@@ -97,7 +92,7 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Deep-dive analysis of the final real-data candidate."
+        description="Analysis of the trained XGBoost model on real data."
     )
     parser.add_argument("--input", default=str(_PROJECT_ROOT / "data" / "processed"))
     args = parser.parse_args()
@@ -256,14 +251,14 @@ def main() -> None:
         "permutation_importance_top15_test": perm_importance_sorted,
     }
 
-    out_path = _PROJECT_ROOT / "reports" / "final_candidate_analysis_real.json"
+    out_path = _PROJECT_ROOT / "reports" / "model_analysis_real.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(
         json.dumps(result, indent=2, ensure_ascii=False, default=str), encoding="utf-8"
     )
 
     print("\n" + "=" * 70)
-    print("FINAL CANDIDATE (tuned xgboost) — DEEP-DIVE ANALYSIS")
+    print("XGBoost — model analysis")
     print("=" * 70)
     print(f"Test set: {len(y_true)} rows")
     print("\nOverall metrics:")

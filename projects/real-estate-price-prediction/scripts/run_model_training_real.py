@@ -1,23 +1,16 @@
 """
 Model training pipeline for Real Estate Price Prediction.
-Usage: python scripts/run_model_training_real.py [--model linear_regression] [--input path]
-(--model defaults to linear_regression, the current best per
-reports/model_comparison.csv; pass --model xgboost/random_forest/etc. to
-train a different model type for comparison.)
+
+Usage: python scripts/run_model_training_real.py [--model xgboost] [--input path]
 
 Finds the latest engineered CSV in data/processed/, trains the requested
-model, evaluates it, and saves the artefact to models/.
+model, evaluates it on the holdout split, and saves the artefact to models/.
 
-FAIL-CLOSED BY DEFAULT: if no engineered CSV exists in data/processed/, this
-script exits with an error instead of silently generating synthetic training
-data. Pass ``--allow-synthetic`` (or run ``make train-demo``) to explicitly
-opt into training on synthetic demo data. Whenever training data is
-synthetic (either freshly generated, or loaded from an existing
-``*.synthetic.csv`` / any file with an ``is_synthetic=True`` column), the
-saved model artefact filename is tagged ``..._synthetic_...pkl`` and its
-metadata carries ``is_synthetic=True``, ``data_source``, a dataset SHA-256
-hash, row/column counts and library versions — see DATA_CARD.md for why
-this matters.
+If no engineered CSV exists in data/processed/, the script exits with an
+error instead of silently training on synthetic data. Pass
+``--allow-synthetic`` (or run ``make train-demo``) to train on synthetic
+demo data — such artefacts are tagged ``..._synthetic_...pkl`` and carry
+``is_synthetic=True`` in their metadata.
 """
 
 from __future__ import annotations
@@ -179,14 +172,12 @@ def _build_lineage_metadata(
     params_from_study: str | None,
     feature_names: "list[str] | tuple[str, ...]" = (),
 ) -> dict:
-    """Assemble the full lineage/provenance dict embedded in a saved artefact.
+    """Assemble the metadata dict embedded in a saved artefact.
 
     Covers version/timestamp/git revision, dataset fingerprint and coverage,
     target definition, split method, seed, hyperparameters, and library
-    versions -- see scripts/promote_model.py's validation checks for why
-    each field exists.
-    (feature_names and metrics themselves are attached separately by
-    ModelTrainer.save()/fit(), not duplicated here.)
+    versions. (feature_names and metrics are attached separately by
+    ModelTrainer.save()/fit().)
     """
     city_coverage = df["city"].value_counts().to_dict() if "city" in df.columns else None
     category_coverage = (
@@ -258,23 +249,13 @@ def _generate_synthetic_engineered_data(n: int = 400) -> pd.DataFrame:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Train a price prediction model on engineered CIAN data."
+        description="Train a price prediction model on engineered restate data."
     )
     parser.add_argument(
         "--model",
         choices=list(_SUPPORTED_MODELS),
-        default="linear_regression",
-        help=(
-            "Model type to train (default: linear_regression — the model "
-            "reports/model_comparison.csv's 5-fold CV + holdout comparison "
-            "found best on this dataset, MAE ~31%% lower than xgboost with a "
-            "far simpler model; NOT xgboost, to avoid silently regressing "
-            "the production artefact back to a worse model if this script is "
-            "re-run without an explicit --model. See MODEL_CARD.md "
-            "'Ограничения' for the drift risk this default is guarding "
-            "against, and its own limits — this is a manual default, not an "
-            "automated 'pick whatever the comparison says is best' guard.)"
-        ),
+        default="xgboost",
+        help="Model type to train (default: xgboost — the model used in the project).",
     )
     parser.add_argument(
         "--input",
@@ -300,8 +281,7 @@ def main() -> None:
             "'location' (default): GroupShuffleSplit on building-level groups "
             "(src.data.schema.build_location_groups) -- every listing sharing a "
             "rounded coordinate stays on one side. This is the honest evaluation "
-            "for the geo model and the strategy behind the current promotion "
-            "candidate. 'group': only near-duplicate listings isolated "
+            "for the geo model. 'group': only near-duplicate listings isolated "
             "(src.data.schema.build_split_groups) -- more optimistic once "
             "coordinates exist. 'random': plain 80/20, diagnostic only."
         ),
@@ -322,11 +302,9 @@ def main() -> None:
         "--params-from-manifest",
         action="store_true",
         help=(
-            "Reuse the hyperparameters recorded in models/current_model.json. Use this "
-            "when the geo-feature evaluation showed the currently-promoted "
-            "hyperparameters still generalise best and re-tuning did not beat them "
-            "(see reports/geo_final_candidates.json). Mutually exclusive with "
-            "--params-from-study."
+            "Reuse the hyperparameters recorded in models/current_model.json "
+            "(re-tuning on the location split did not beat them). Mutually "
+            "exclusive with --params-from-study."
         ),
     )
     parser.add_argument(
@@ -334,14 +312,10 @@ def main() -> None:
         action="store_true",
         help=(
             "Update models/current_model.json to point at this newly trained "
-            "artefact, so API/dashboard start serving it after a restart. "
-            "For REAL (non-synthetic) data this defaults to OFF: a freshly "
-            "trained real-data model is saved to disk either way, but does "
-            "NOT become the serving model until someone deliberately reviews "
-            "its metrics and passes --promote (or hand-edits "
-            "models/current_model.json) — training alone is not validation. "
-            "Synthetic/demo runs (--allow-synthetic) keep the historical "
-            "always-promote behaviour, since there is nothing to review there."
+            "artefact, so API/dashboard serve it after a restart. For real data "
+            "this defaults to OFF (the model is still saved to disk); check its "
+            "metrics first, then pass --promote. Synthetic/demo runs update the "
+            "manifest automatically."
         ),
     )
     args = parser.parse_args()
@@ -467,9 +441,7 @@ def main() -> None:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         trainer_params = dict(manifest.get("hyperparameters") or {})
         if not trainer_params:
-            print(
-                f"ERROR: {manifest_path} has no 'hyperparameters' to reuse.", file=sys.stderr
-            )
+            print(f"ERROR: {manifest_path} has no 'hyperparameters' to reuse.", file=sys.stderr)
             raise SystemExit(2)
         logger.info("Reusing hyperparameters from %s: %s", manifest_path, trainer_params)
     if args.params_from_study:
@@ -558,16 +530,15 @@ def main() -> None:
         set_as_current=set_as_current,
     )
     logger.info(
-        "Model saved to %s (is_synthetic=%s, promoted_to_current=%s)",
+        "Model saved to %s (is_synthetic=%s, set_as_current=%s)",
         model_path,
         is_synthetic,
         set_as_current,
     )
     if not set_as_current:
         logger.warning(
-            "Real-data model NOT promoted to current_model.json (pass --promote after "
-            "reviewing its metrics to make API/dashboard serve it). "
-            "models/current_model.json still points at the previously reviewed artefact."
+            "current_model.json not updated (pass --promote to make API/dashboard "
+            "serve this model)."
         )
 
     # ------------------------------------------------------------------
@@ -587,8 +558,8 @@ def main() -> None:
     print(f"Features used   : {list(X.columns)}")
     print(f"Model saved to  : {model_path}")
     print(
-        f"Promoted to current_model.json : {set_as_current}"
-        + ("" if set_as_current else "  (pass --promote after review to serve this model)")
+        f"Set as current model : {set_as_current}"
+        + ("" if set_as_current else "  (pass --promote to serve this model)")
     )
     print()
     evaluator.print_report(eval_metrics)

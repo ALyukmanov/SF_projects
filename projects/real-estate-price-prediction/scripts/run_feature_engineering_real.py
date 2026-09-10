@@ -13,25 +13,14 @@ restate data is found. Either path then runs the same cleaning, economic
 feature engineering and feature engineering steps, and saves the enriched
 DataFrame to data/processed/real_estate_engineered.csv.
 
-NOTE (known gap): each ``restate_<city>_listings.csv``
-reflects only the most recent single ``scrape`` invocation's own run
-directory, not an accumulation across separate collection runs on different
-days -- there is no cross-run merge/history layer yet. The full raw archives
-under data/raw/restate/<date>/<city>_<time>/ do persist per run, but this
-script currently ingests only the latest interim CSV per city.
+Each ``restate_<city>_listings.csv`` reflects only the most recent ``scrape``
+run per city — there is no cross-run merge layer.
 
-FAIL-CLOSED BY DEFAULT: if no raw CSV exists in data/raw/, this script exits
-with an error instead of silently generating synthetic data. Pass
-``--allow-synthetic`` (or run ``make demo-data``) to explicitly opt into
-200 rows of clearly-labelled synthetic demo data — the output is then
-written to ``real_estate_engineered.synthetic.csv`` (not the "real" output
-filename), with an ``is_synthetic=True`` column embedded in the data itself
-and a ``*.synthetic.meta.json`` sidecar recording generation parameters.
-See DATA_CARD.md for why this
-matters: earlier versions of this script silently produced synthetic data
-whenever no real CSV was found, which is how the committed model artefact
-ended up trained on synthetic data without that being obvious from the
-pipeline itself.
+If no input CSV exists, the script exits with an error instead of silently
+generating synthetic data. Pass ``--allow-synthetic`` (or run
+``make demo-data``) to build 200 rows of labelled synthetic demo data — the
+output then goes to ``real_estate_engineered.synthetic.csv`` with an
+``is_synthetic=True`` column and a ``*.synthetic.meta.json`` sidecar.
 """
 
 from __future__ import annotations

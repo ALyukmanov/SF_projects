@@ -1,32 +1,28 @@
 """
-Final geo-model candidate comparison — one strict location-grouped holdout.
+Compare the model with and without geo features on the location-grouped holdout.
 
 Usage: python scripts/compare_geo_uplift.py
 
 Loads ``data/processed/real_estate_cleaned.csv`` and, on the leakage-safe
-**location-grouped** split (src.data.schema.build_location_groups — every
-listing in the same building on one side; the honest evaluation for a geo
-model), trains and evaluates three candidates on the identical holdout:
+location-grouped split (src.data.schema.build_location_groups), trains and
+evaluates three variants on the same holdout:
 
-  production_pre_geo   pre-geo feature set, current production xgboost params
-  geo_current_params   + 18 OSM geo features, same current production params
-  geo_tuned            + 18 OSM geo features, params from
-                       reports/tuning_study_real.json (scripts/tune_models_real.py,
-                       tuned by DEV-only GroupKFold CV — the holdout below is
-                       never seen during tuning)
+  pre_geo            27 base features, current model's xgboost params
+  geo_current_params + 18 OSM geo features, same params
+  geo_tuned          + 18 OSM geo features, params from
+                     reports/tuning_study_real.json (tuned by DEV-only
+                     GroupKFold CV — the holdout is never seen during tuning)
 
-For each: MAE / RMSE / R² / MAPE / median AE on the held-out test set.
+For each: MAE / RMSE / R² / MAPE / median AE on the holdout.
 
-For the winning geo candidate: per-city breakdown, by-coordinate-availability
-breakdown (has_coordinates 1 vs 0), price-tercile breakdown, and permutation
-feature importance (top 15) on the holdout — plus a small leakage scan.
+For the best geo variant: per-city, by-coordinate-availability, and
+price-tercile breakdowns, plus permutation importance and a leakage scan.
 
-The near-duplicate-only split ("group") is also run and printed as a
-secondary reference, but it does NOT decide the winner (it is optimistic
-once coordinates exist: two flats in one building can straddle it).
+The near-duplicate-only split ("group") is also run as a secondary
+reference, but it does not decide the result (it is optimistic once
+coordinates exist).
 
-Writes reports/geo_final_candidates.json. Saves no model artefact, does not
-touch models/current_model.json.
+Writes reports/geo_uplift.json. Saves no model artefact.
 """
 
 from __future__ import annotations
@@ -55,9 +51,9 @@ logger = get_logger("compare_geo_uplift")
 
 _RANDOM_SEED = 42
 
-# Current production xgboost params (models/current_model.json) — the
+# Current model's xgboost params (models/current_model.json) — the
 # apples-to-apples reference so pre-geo vs geo differ only by the feature set.
-_PROD_XGB_PARAMS = {
+_CURRENT_XGB_PARAMS = {
     "n_estimators": 600,
     "max_depth": 8,
     "learning_rate": 0.042625313784050885,
@@ -119,10 +115,12 @@ def _evaluate_split(df: pd.DataFrame, split_strategy: str, tuned_params: dict | 
     candidates: dict[str, dict] = {}
 
     # A: pre-geo baseline
-    m, s, yp = _fit_predict(_xgb(_PROD_XGB_PARAMS), X_train[base_cols], y_train, X_test[base_cols])
-    candidates["production_pre_geo"] = {
+    m, s, yp = _fit_predict(
+        _xgb(_CURRENT_XGB_PARAMS), X_train[base_cols], y_train, X_test[base_cols]
+    )
+    candidates["pre_geo"] = {
         "feature_set": f"pre-geo ({len(base_cols)} features)",
-        "params": "production",
+        "params": "current",
         "metrics": _metrics(y_true, yp),
         "_pred": yp,
         "_model": m,
@@ -131,10 +129,10 @@ def _evaluate_split(df: pd.DataFrame, split_strategy: str, tuned_params: dict | 
     }
 
     # B: geo, current params
-    m, s, yp = _fit_predict(_xgb(_PROD_XGB_PARAMS), X_train, y_train, X_test)
+    m, s, yp = _fit_predict(_xgb(_CURRENT_XGB_PARAMS), X_train, y_train, X_test)
     candidates["geo_current_params"] = {
         "feature_set": f"+geo ({len(feat_names)} features)",
-        "params": "production",
+        "params": "current",
         "metrics": _metrics(y_true, yp),
         "_pred": yp,
         "_model": m,
@@ -174,7 +172,7 @@ def _winner_deep_dive(ev: dict) -> dict:
     geo_names = [n for n in ("geo_tuned", "geo_current_params") if n in cands]
     winner_name = min(geo_names, key=lambda n: cands[n]["metrics"]["mae"])
     winner = cands[winner_name]
-    pre = cands["production_pre_geo"]
+    pre = cands["pre_geo"]
     X_test, y_true = ev["_X_test"], ev["_y_true"]
     yp_win, yp_pre = winner["_pred"], pre["_pred"]
 
@@ -332,7 +330,7 @@ def main() -> None:
         "secondary_reference_near_dup": _clean(grp),
         "winner_deep_dive_location": deep,
     }
-    out_path = _PROJECT_ROOT / "reports" / "geo_final_candidates.json"
+    out_path = _PROJECT_ROOT / "reports" / "geo_uplift.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
@@ -345,12 +343,16 @@ def main() -> None:
     print(f"\n--- Winner on the location holdout: {deep['winner']} ---")
     print("\nPer-city MAE (pre_geo -> winner):")
     for c, v in deep["per_city"].items():
-        print(f"  {c:16s} n={v['n']:4d}  {v['pre_geo_mae']:>13,.0f} -> {v['winner_mae']:>13,.0f}   "
-              f"MAPE {v['pre_geo_mape']:.1f}% -> {v['winner_mape']:.1f}%")
+        print(
+            f"  {c:16s} n={v['n']:4d}  {v['pre_geo_mae']:>13,.0f} -> {v['winner_mae']:>13,.0f}   "
+            f"MAPE {v['pre_geo_mape']:.1f}% -> {v['winner_mape']:.1f}%"
+        )
     print("\nBy coordinate availability MAE (pre_geo -> winner):")
     for c, v in deep["by_coordinate_availability"].items():
-        print(f"  {c:18s} n={v['n']:4d}  {v['pre_geo_mae']:>13,.0f} -> {v['winner_mae']:>13,.0f}   "
-              f"MAPE {v['pre_geo_mape']:.1f}% -> {v['winner_mape']:.1f}%")
+        print(
+            f"  {c:18s} n={v['n']:4d}  {v['pre_geo_mae']:>13,.0f} -> {v['winner_mae']:>13,.0f}   "
+            f"MAPE {v['pre_geo_mape']:.1f}% -> {v['winner_mape']:.1f}%"
+        )
     print("\nPrice tercile MAE (pre_geo -> winner):")
     for c, v in deep["price_tercile"].items():
         print(f"  {c:6s} n={v['n']:4d}  {v['pre_geo_mae']:>13,.0f} -> {v['winner_mae']:>13,.0f}")
@@ -359,8 +361,10 @@ def main() -> None:
         for k, v in deep["permutation_importance_top15"].items():
             tag = "  <-- geo" if k in GEO_FEATURE_COLUMNS else ""
             print(f"  {k:34s} {v:+.5f}{tag}")
-        print(f"\nLeakage scan — suspicious feature names in matrix: "
-              f"{deep['leakage_scan']['suspicious_feature_names_in_matrix'] or 'none'}")
+        print(
+            f"\nLeakage scan — suspicious feature names in matrix: "
+            f"{deep['leakage_scan']['suspicious_feature_names_in_matrix'] or 'none'}"
+        )
     print(f"\nSaved: {out_path}")
 
 

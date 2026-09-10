@@ -29,13 +29,8 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# ---------------------------------------------------------------------------
-# City-level base price per sqm (RUB) used in DEMO / heuristic mode only.
-# This is a simple rule-based heuristic, unrelated to the ML model's learned
-# coefficients — kept separate on purpose so DEMO mode never pretends to be
-# the trained model.
-# ---------------------------------------------------------------------------
-
+# City-level base price per sqm (RUB), used only in DEMO mode (no trained
+# model) — a simple heuristic, not the ML model.
 _CITY_BASE_PRICE_PER_SQM: Dict[str, float] = {
     "москва": 280_000.0,
     "москва ": 280_000.0,  # trailing space guard
@@ -51,22 +46,13 @@ _CITY_BASE_PRICE_PER_SQM: Dict[str, float] = {
 
 _DEFAULT_PRICE_PER_SQM = 70_000.0
 
-# Heuristic estimated-range width in DEMO mode (±15%). NOT a statistical
-# confidence interval — see PREDICTION_INTERVAL notes in _predict_demo/
-# _predict_with_model docstrings and reports/MODEL_EXPERIMENTS.md.
+# Estimated-range width in DEMO mode (±15%) — not a statistical confidence
+# interval.
 _DEMO_CI_FRACTION = 0.15
 
-# ---------------------------------------------------------------------------
-# Feature order expected by the model. This is derived from
-# ``FeatureEngineer`` (the single source of truth for feature construction)
-# rather than duplicated as an independent literal, to remove the drift risk:
-# previously this
-# list and the trainer's feature list were two separately maintained
-# constants guarded only by a regression test. NOTE: an artefact's own
-# ``feature_names`` (persisted at training time) still takes precedence when
-# a model is loaded — this constant is only the fallback used when an older
-# artefact does not carry its own feature list.
-# ---------------------------------------------------------------------------
+# Fallback feature order, derived from FeatureEngineer. A loaded artefact's
+# own persisted ``feature_names`` takes precedence; this is only used for
+# older artefacts that don't carry their own list.
 _MODEL_FEATURES: List[str] = FeatureEngineer()._build_default_feature_list()
 
 # Macro defaults used when the model expects economic features but none are provided
@@ -77,28 +63,13 @@ _MACRO_DEFAULTS: Dict[str, float] = {
     "rate_change_6m": 0.0,
 }
 
-# ---------------------------------------------------------------------------
-# Segment reliability.
-#
-# The model does NOT take property category as an input feature at all — it
-# only sees rooms/area/floor/city/building_type/macro. For most categories
-# (flats) that's fine. For `cottages_sale` and `room_sale`, restate.ru
-# structurally does not publish `rooms` (both) or `floor`/`floors_total`
-# (cottages) — not a scraping gap, the source site does not have these
-# fields for these listing types. Those rows'
-# rooms/floor/floors_total are filled from the ordinary-flat population's
-# city medians, which is a poor proxy for a house or a single room, so the
-# model measurably underperforms there:
-#   cottages_sale: n=158 (42 holdout), holdout R²≈0.22
-#   room_sale:     n=198 (38 holdout), holdout R²≈-0.80 (worse than predicting the mean)
-# vs R²>0.7 for the ordinary flat categories. A larger scrape would not fix
-# this — the missing fields are absent at the source regardless of volume.
-# `property_category` is an optional, honesty-only input: it does not change
-# the numeric prediction (the model has no such feature to use), only the
-# `prediction_reliability`/`segment_support` metadata attached to the
-# response, so a caller is not misled into thinking a cottage/room estimate
-# carries the same confidence as an ordinary flat.
-# ---------------------------------------------------------------------------
+# Segment reliability. The model has no property-category feature. For
+# `cottages_sale` and `room_sale` the source does not publish rooms (both)
+# or floor/floors_total (cottages), so those fields are filled from
+# ordinary-flat city medians and the model does much worse there
+# (holdout R² ≈ 0.22 and ≈ -0.80 vs > 0.7 for flats). `property_category`
+# is an optional input that only sets the `prediction_reliability` /
+# `segment_support` metadata — it does not change the numeric prediction.
 LOW_SUPPORT_SEGMENTS: Dict[str, Dict[str, Any]] = {
     "cottages_sale": {
         "n_train": 116,
@@ -467,18 +438,15 @@ class Predictor:
     }
 
     def _fill_missing_listing_fields(self, features: Dict[str, Any]) -> Dict[str, float]:
-        """Return rooms/total_area/floor/floors_total, filling any field
-        absent from *features* the same way offline training would have.
+        """Return rooms/total_area/floor/floors_total, filling any absent
+        field the same way training did.
 
-        Runs the raw values through the loaded artefact's persisted
-        train-fit ``GroupMedianImputer.transform()`` (city-aware, same
-        fallback chain as ``DataCleaner``/``run_feature_engineering_real.py``
-        used offline — see ``src/preprocessing/imputer.py``) rather than a
-        single hardcoded literal, so a live request that happens to omit one
-        of these fields is filled consistently with how the model's own
-        training data was. Falls back to fixed literals for artefacts saved
-        before the imputer was persisted (e.g. the current synthetic
-        production model) — DEMO mode never reaches this method.
+        Runs the raw values through the artefact's persisted train-fit
+        ``GroupMedianImputer.transform()`` (city-aware — see
+        ``src/preprocessing/imputer.py``) so a request that omits one of
+        these fields is filled consistently with the training data. Falls
+        back to fixed literals for artefacts saved before the imputer was
+        persisted. DEMO mode never reaches this method.
         """
         raw = {
             "rooms": features.get("rooms"),
@@ -653,7 +621,9 @@ class Predictor:
             "dataset_sha256": meta.get("dataset_sha256"),
             "prediction_interval": meta.get("prediction_interval", {}),
             "geo_enabled": self._expects_geo_features,
-            "geo_poi_available": (not self._geo_unavailable) if self._expects_geo_features else None,
+            "geo_poi_available": (not self._geo_unavailable)
+            if self._expects_geo_features
+            else None,
             "coordinate_coverage": meta.get("coordinate_coverage"),
             "osm_poi_manifest": meta.get("osm_poi_manifest"),
         }

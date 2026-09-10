@@ -1,10 +1,8 @@
-"""Live-verifies the FastAPI app against the real (non-synthetic) trained
-candidate WITHOUT touching models/current_model.json -- switching the
-production model is a separate, explicit step (see scripts/promote_model.py)
-and must never be a side effect of running this test.
+"""Checks the FastAPI app against the real (non-synthetic) trained model
+without touching models/current_model.json.
 
-Mechanism (matches the project's existing artefact-selection contract,
-Predictor.load()'s docstring): a real .pkl is copied into an ISOLATED
+Mechanism (matches Predictor.load()'s artefact-selection order): a real
+.pkl is copied into an isolated
 tmp_path directory together with its own current_model.json manifest, and
 api.main._predictor (a plain module-level global, not a FastAPI Depends())
 is monkeypatched to a fresh Predictor(model_path=<that isolated dir>) before
@@ -144,14 +142,11 @@ class TestExactArtifactLoaded:
         assert manifest["artifact_sha256"] == expected_hash
         assert copied.stat().st_size == expected_size
 
-    def test_production_current_model_json_untouched(self, real_candidate_client):
+    def test_real_current_model_json_untouched(self, real_candidate_client):
         """The real models/current_model.json must be byte-identical before
-        and after this file's isolated-candidate fixtures run -- proves the
-        isolation mechanism (a copy in a throwaway tmp_path dir, see the
-        module docstring) never leaks a write into the real production
-        manifest, regardless of which model happens to be promoted at the
-        time these tests run (see tests/test_production_state.py for
-        assertions about what the real manifest *should* currently say).
+        and after this file's isolated-candidate fixtures run -- the
+        isolation mechanism (a copy in a throwaway tmp_path dir) must never
+        leak a write into the real manifest.
         """
         before_hash = _PRODUCTION_MANIFEST_SHA256_AT_COLLECTION
         after_hash = hashlib.sha256((_MODELS_DIR / "current_model.json").read_bytes()).hexdigest()

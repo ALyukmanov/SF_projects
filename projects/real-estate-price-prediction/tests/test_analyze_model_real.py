@@ -1,11 +1,11 @@
-"""Tests for scripts/analyze_final_candidate_real.py's metric helpers."""
+"""Tests for scripts/analyze_model_real.py's metric helpers."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from scripts.analyze_final_candidate_real import _full_metrics, _rmsle, _smape
+from scripts.analyze_model_real import _full_metrics, _rmsle, _smape
 
 
 class TestSmape:

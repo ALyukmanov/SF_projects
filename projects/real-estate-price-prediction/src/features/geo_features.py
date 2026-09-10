@@ -200,9 +200,7 @@ class _CityPOIIndex:
         tree = self._trees.get(category)
         if tree is None:
             return np.zeros(len(coords_rad), dtype=int)
-        return tree.query_radius(
-            coords_rad, r=radius_m / _EARTH_RADIUS_M, count_only=True
-        )
+        return tree.query_radius(coords_rad, r=radius_m / _EARTH_RADIUS_M, count_only=True)
 
 
 class GeoFeatureBuilder:
@@ -276,7 +274,9 @@ class GeoFeatureBuilder:
             df[col] = 0
 
         if "latitude" not in df.columns or "longitude" not in df.columns:
-            logger.warning("No latitude/longitude columns — all %d rows get sentinel geo features.", n)
+            logger.warning(
+                "No latitude/longitude columns — all %d rows get sentinel geo features.", n
+            )
             return self._finalise_dtypes(df)
 
         lat = pd.to_numeric(df["latitude"], errors="coerce")

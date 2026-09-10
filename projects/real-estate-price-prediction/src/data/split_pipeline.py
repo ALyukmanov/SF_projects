@@ -1,14 +1,13 @@
 """
-Single source of truth for the leakage-safe split -> impute -> featurize
-pipeline used by every script that trains or evaluates a real-data
-candidate (``run_model_training_real.py``, ``verify_split_leakage.py``,
-``analyze_final_candidate_real.py``).
+Leakage-safe split -> impute -> featurize pipeline, shared by every script
+that trains or evaluates a model (``run_model_training_real.py``,
+``verify_split_leakage.py``, ``analyze_model_real.py``).
 
-Order matters: raw/cleaned listings -> (group-aware or random) split ->
+Order matters: cleaned listings -> (group-aware or random) split ->
 ``GroupMedianImputer`` fit on TRAIN ONLY -> ``FeatureEngineer.create_features``
 run separately on each split half -> feature/target extraction. Computing
-imputation statistics or engineered features on the full dataset BEFORE the
-split (an earlier approach) leaks holdout information into train.
+imputation statistics or engineered features on the full dataset before the
+split would leak holdout information into train.
 """
 
 from __future__ import annotations
@@ -102,8 +101,7 @@ def split_impute_featurize(
             (:func:`src.data.schema.build_split_groups`); it is more
             optimistic once coordinates exist because two different flats in
             one building can still straddle the split. ``"random"`` is a
-            plain positional split, kept only as a diagnostic comparison —
-            never the strategy behind a promotion candidate.
+            plain positional split, kept only for diagnostic comparison.
         test_size: Held-out fraction.
         random_state: Seed for the splitter.
 

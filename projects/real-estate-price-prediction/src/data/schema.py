@@ -1,19 +1,11 @@
 """
-Data schema / contract validation for real-estate listing DataFrames.
+Schema / range validation for real-estate listing DataFrames.
 
-Why a hand-rolled validator instead of Pandera?
-------------------------------------------------
-Pandera was evaluated but not
-added as a dependency in this pass: the validation rules needed here are a
-short, fixed list of row-level numeric-range and referential checks with
-custom, readable Russian-friendly error messages, which a ~150-line module
-with no new third-party dependency covers adequately for a first-year
-project's scope. This is a documented, reversible choice — swapping in
-Pandera later is straightforward if the schema grows materially (e.g. many
-more columns, dtype coercion pipelines). See DATA_CARD.md.
+A short, fixed list of row-level numeric-range and referential checks with
+readable error messages — a plain module rather than a Pandera dependency,
+which is enough for this dataset.
 
-Usage
------
+Usage:
     from src.data.schema import validate_listings_df, SchemaValidationError
 
     try:

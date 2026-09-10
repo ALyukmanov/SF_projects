@@ -113,9 +113,9 @@ class TestReferentialChecks:
 
 
 class TestNearDuplicateCandidates:
-    """Data Quality Gate 2.0 -- near-duplicate detection (see schema.py's
-    find_near_duplicate_candidates docstring for the matching rule). These
-    NEVER auto-delete rows -- only ever report candidates."""
+    """Near-duplicate detection (see schema.py's find_near_duplicate_candidates
+    docstring for the matching rule). These never auto-delete rows -- only
+    report candidates."""
 
     def _df(self, **overrides) -> pd.DataFrame:
         base = {

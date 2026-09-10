@@ -89,9 +89,7 @@ def test_nearest_distance_matches_hand_haversine(builder: GeoFeatureBuilder):
     must equal the hand-computed haversine distance to M-A (the closer of the
     two Moscow metro POI)."""
     lat, lon = 55.7502, 37.6203
-    out = builder.transform(
-        pd.DataFrame([{"city": "Москва", "latitude": lat, "longitude": lon}])
-    )
+    out = builder.transform(pd.DataFrame([{"city": "Москва", "latitude": lat, "longitude": lon}]))
     expected = _haversine_m(lat, lon, 55.7500, 37.6200)
     assert out.loc[0, "nearest_metro_station_distance_m"] == pytest.approx(expected, abs=1.0)
     assert out.loc[0, "has_coordinates"] == 1
@@ -174,7 +172,7 @@ def test_missing_poi_file_is_not_fatal(tmp_path: Path):
     )
     # every row falls back to sentinel/zero, nothing raised, columns present
     assert out.loc[0, "has_coordinates"] == 0
-    assert list(out.columns[-len(GEO_FEATURE_COLUMNS):]) != []  # geo cols added
+    assert list(out.columns[-len(GEO_FEATURE_COLUMNS) :]) != []  # geo cols added
 
 
 def test_geo_columns_registered_as_optional_model_features():
@@ -207,9 +205,7 @@ class TestPredictorGeoIntegration:
         assert not any(c in vec for c in GEO_FEATURE_COLUMNS)
 
     def test_geo_emitted_and_matches_builder(self, poi_csv: Path):
-        p = self._predictor(
-            poi_csv, ["rooms", "total_area", *GEO_FEATURE_COLUMNS]
-        )
+        p = self._predictor(poi_csv, ["rooms", "total_area", *GEO_FEATURE_COLUMNS])
         req = {
             "rooms": 2,
             "total_area": 55.0,
@@ -220,9 +216,13 @@ class TestPredictorGeoIntegration:
             "longitude": 37.6205,
         }
         vec = p._build_feature_vector(req)
-        ref = GeoFeatureBuilder(poi_csv=poi_csv).transform(
-            pd.DataFrame([{"city": "Москва", "latitude": 55.7505, "longitude": 37.6205}])
-        ).iloc[0]
+        ref = (
+            GeoFeatureBuilder(poi_csv=poi_csv)
+            .transform(
+                pd.DataFrame([{"city": "Москва", "latitude": 55.7505, "longitude": 37.6205}])
+            )
+            .iloc[0]
+        )
         for col in GEO_FEATURE_COLUMNS:
             assert vec[col] == pytest.approx(float(ref[col]))
 
@@ -278,15 +278,17 @@ class TestPredictorOsmDependency:
 
         # a GeoFeatureBuilder that never finds a POI table
         monkeypatch.setattr(
-            predmod, "GeoFeatureBuilder", lambda *a, **k: gf.GeoFeatureBuilder(poi_csv=tmp_path / "nope.csv")
+            predmod,
+            "GeoFeatureBuilder",
+            lambda *a, **k: gf.GeoFeatureBuilder(poi_csv=tmp_path / "nope.csv"),
         )
-        mdir = self._fake_geo_artifact(
-            tmp_path, ["rooms", *GEO_FEATURE_COLUMNS], poi_csv=None
-        )
+        mdir = self._fake_geo_artifact(tmp_path, ["rooms", *GEO_FEATURE_COLUMNS], poi_csv=None)
         p = predmod.Predictor(model_path=str(mdir))
         assert p.load() is True
         assert p._geo_unavailable is True
         assert p.model_info["geo_enabled"] is True
         assert p.model_info["geo_poi_available"] is False
         with pytest.raises(RuntimeError, match="osm_poi.csv"):
-            p.predict({"rooms": 2, "total_area": 55.0, "floor": 4, "floors_total": 10, "city": "Москва"})
+            p.predict(
+                {"rooms": 2, "total_area": 55.0, "floor": 4, "floors_total": 10, "city": "Москва"}
+            )

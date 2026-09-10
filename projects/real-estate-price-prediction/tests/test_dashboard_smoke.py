@@ -66,12 +66,12 @@ def test_dashboard_low_support_segment_shows_warning():
 
 
 def test_dashboard_geo_model_uses_coordinates():
-    """Only meaningful when the promoted model is the geo model; skips otherwise."""
+    """Only meaningful when the current model is the geo model; skips otherwise."""
     at = _fresh()
     # geo model -> the coordinates checkbox exists
     coord_cb = [c for c in at.checkbox if c.label.lower().startswith("указать координаты")]
     if not coord_cb:
-        pytest.skip("promoted model has no geo features — no coordinate input on the page")
+        pytest.skip("current model has no geo features — no coordinate input on the page")
     _set_city(at, "Москва")
     at.run()
     for c in at.checkbox:

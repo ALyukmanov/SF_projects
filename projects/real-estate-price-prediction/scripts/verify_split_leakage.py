@@ -1,20 +1,16 @@
-"""Independent, standalone re-verification of this project's central
-leakage claims, run fresh against the current CLEANED dataset (not just
-re-read from an earlier written audit):
+"""Check the split for data leakage, run against the current cleaned dataset:
 
-1. How many near-duplicate groups (find_near_duplicate_candidates) span
-   both sides of the CURRENT random 80/20 split vs the group-aware split.
-2. Whether the tuned xgboost candidate's held-out metrics look meaningfully
-   better under random split than under group-aware split -- if so, the
-   group-aware (more conservative) numbers are the ones to report as primary.
-3. Imputation fit-scope: proves rooms/total_area/floor/floors_total median
-   fill values used for the train split are NOT influenced by holdout rows
-   (the leakage fix -- see src/preprocessing/imputer.py). Quantifies the
-   old full-dataset-fit leak by comparing it against the train-only fit.
+1. How many near-duplicate groups (find_near_duplicate_candidates) span both
+   sides of a random 80/20 split vs the group-aware split.
+2. Whether the xgboost model's holdout metrics look better under a random
+   split than under the group-aware split -- if so, the group-aware (more
+   conservative) numbers are the ones to report.
+3. Imputation fit-scope: checks that the rooms/total_area/floor/floors_total
+   median fill values for the train split are not influenced by holdout
+   rows, and compares against the (leaky) full-dataset fit.
 
-Does not train with tuning (uses the already-tuned hyperparameters from
-reports/tuning_study_real.json to isolate the split-strategy effect from
-hyperparameter effects). Writes reports/leakage_reverification_real.json.
+Uses the tuned hyperparameters from reports/tuning_study_real.json to
+isolate the split effect. Writes reports/split_leakage_check.json.
 """
 
 from __future__ import annotations
@@ -272,7 +268,7 @@ def main() -> None:
             % (metrics_random["r2"], metrics_group["r2"], metrics_location["r2"])
         ),
     }
-    out_path = _PROJECT_ROOT / "reports" / "leakage_reverification_real.json"
+    out_path = _PROJECT_ROOT / "reports" / "split_leakage_check.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"\nWrote {out_path}")

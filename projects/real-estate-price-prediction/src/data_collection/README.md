@@ -29,24 +29,19 @@ search-results JSON-LD doesn't include. It caches every fetched page
 resumed. Output goes to `restate_<city>_listings_geo.csv` next to the
 originals, which are left untouched.
 
-The CIAN scrapers documented below are **not deleted, but not being
-invested in further**: every live contact attempt so far, including from
-this project's own network via CIAN's own robots.txt-allowed API path,
-returned a CAPTCHA challenge page, 0 listings. `python -m
-src.data_collection probe --source cian` re-checks this without writing new
-code, if CIAN's posture ever changes.
+The CIAN scrapers below are kept but no longer used: every recent request
+returned a CAPTCHA page and 0 listings. `python -m src.data_collection probe
+--source cian` re-checks this if CIAN's behaviour changes.
 
 ---
 
 # CIAN scrapers (dormant — see status above)
 
-Two independent scraper implementations for the same site, kept side by side
-on purpose (not because one is legacy): `cian_scraper.py` (requests +
-BeautifulSoup, fast, no browser) is the primary path; `cian_selenium_scraper.py`
+Two scraper implementations for the same site: `cian_scraper.py` (requests +
+BeautifulSoup, no browser) is the primary path; `cian_selenium_scraper.py`
 (Selenium/Chrome) is a fallback for pages that only render listings via
-client-side JavaScript that the requests-based parser's three extraction
-strategies (JSON-LD → embedded JS JSON → `<article>`/CardComponent HTML
-fallback) cannot see.
+client-side JavaScript, which the requests parser's three extraction
+strategies (JSON-LD → embedded JS JSON → `<article>` HTML) cannot see.
 
 ## Shared, network-free parsing logic — `parsing_utils.py`
 
@@ -102,10 +97,8 @@ testable modules, rather than interleaved inside `cian_scraper.py`:
 | Persistence / checkpointing / resume | `persistence.py` (`JsonlCheckpoint`) | `tests/data_collection/test_persistence.py`, `tests/test_cian_scraper_checkpoint.py` |
 
 `CianScraper._get_with_retry()` is a thin adapter over
-`network.fetch_with_retry()` — kept as a method (not inlined) specifically so
-existing tests that monkeypatch `scraper._get_with_retry` continue to work
-unmodified; the actual retry/backoff decisions live in `network.py` and are
-tested there directly, without needing `CianScraper` in the loop at all.
+`network.fetch_with_retry()`; the retry/backoff logic lives in `network.py`
+and is tested there directly.
 
 ## Resilience / politeness features (requests scraper)
 
@@ -127,53 +120,26 @@ tested there directly, without needing `CianScraper` in the loop at all.
 append-only JSONL checkpointing — each page's listings are written
 immediately after parsing, and constructing a new `CianScraper` with the
 same `checkpoint_path` pre-loads already-collected URLs into the
-deduplication set, so a restarted run skips them rather than re-fetching
-(and re-risking a rate-limit/block on) the same pages. Off by default
-(`checkpoint_path=None`). Deliberately a flat JSONL file, not a
-database/queue — see `persistence.py`'s module docstring for why, given
-this project's data volumes.
+deduplication set, so a restarted run skips them rather than re-fetching the
+same pages. Off by default (`checkpoint_path=None`). A flat JSONL file, not a
+database.
 
-## What this module intentionally does NOT do
+## What this module does not do
 
-- **No CAPTCHA or anti-bot bypass of any kind.** If CIAN serves a
-  CAPTCHA/challenge page, the scraper has no special handling for it beyond
-  the existing 403/404 give-up path — this is deliberate, per repository
-  policy, and (see "Site-liveness" below) is not a hypothetical case.
-- **No mass/continuous scraping built into this codebase.** `max_pages`
-  defaults to a small number (2 for the requests scraper); there is no
-  scheduler, queue, or "keep scraping forever" mode.
-- No proxy rotation, no residential-IP infrastructure, no attempt to defeat
-  rate limiting beyond the polite delay/backoff behaviour above.
+- No CAPTCHA or anti-bot bypass. If CIAN serves a CAPTCHA page, the scraper
+  gives up the same way it does on a 403/404.
+- No mass/continuous scraping: `max_pages` defaults to 2, there is no
+  scheduler or "keep scraping" mode.
+- No proxy rotation beyond the polite delay/backoff above.
 
-## Site-liveness (CIAN)
+## CIAN status
 
-Per this project's standing "sparing 1-2 page checks only" policy, a single
-`GET` to `CianScraper(city="moskva").base_url` (a normal, first-page search
-results URL, no pagination beyond page 1) was made to check current
-reachability and markup compatibility. Result: **HTTP 200, but the response
-body is a CAPTCHA challenge page** (`<title>Captcha - база объявлений
-ЦИАН</title>`), not a search-results page — none of the three extraction
-strategies (JSON-LD / embedded JS JSON / article-tag fallback) find anything
-because there is nothing listing-shaped to find. Per policy, this was not
-worked around, retried with different headers/proxies, or investigated
-further — one request was enough to answer "is this currently viable
-without solving a CAPTCHA," and the answer is no. **Practical conclusion:
-CIAN cannot currently be used as a real-data source by this project without
-crossing the explicit CAPTCHA-bypass boundary, which will not happen.**
+A single check request to CIAN's first search-results page returns HTTP 200
+with a CAPTCHA page (`<title>Captcha - база объявлений ЦИАН</title>`), not
+listings, so none of the extraction strategies find anything. CIAN is not
+usable as a data source without solving the CAPTCHA, which this project does
+not do. restate.ru is used instead.
 
-A genuinely separate, unrelated bug was found and fixed alongside this
-check: the scraper's request headers advertise `Accept-Encoding: gzip,
-deflate, br`, but the `brotli` package was not a project dependency. CIAN's
-response used Brotli compression; without a Brotli decoder installed,
-`requests`/`urllib3` silently returned undecodable garbage instead of
-either decompressing correctly or raising an error — which would have been
-easy to misdiagnose as "the site changed its markup" or "we got blocked,"
-rather than "we're missing a dependency for encoding we ourselves
-requested." Fixed by adding `brotli==1.1.0` to `requirements.txt`.
-
-Домклик, Авито Недвижимость, and Яндекс.Недвижимость are not checked here —
-no scraper code exists for them in this project, and adding new site
-support is out of scope for this module. See the project root
-`DATA_CARD.md` / `README.md` roadmap for whether/how alternative,
-legitimately-licensed data sources are pursued instead of scraping
-additional commercial sites.
+Note: `requirements.txt` pins `brotli` — CIAN responses use Brotli
+compression, and without a decoder `requests` silently returns undecodable
+bytes rather than raising.

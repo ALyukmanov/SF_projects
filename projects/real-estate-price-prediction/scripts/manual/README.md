@@ -1,10 +1,9 @@
-# scripts/manual/ — legacy manual dev scripts
+# scripts/manual/ — old manual dev scripts
 
-These four scripts predate this project's `tests/` pytest suite and
-`scripts/run_feature_engineering_real.py` / `run_model_training_real.py`
-pipeline. They are **not** part of the automated test suite or CI, and are
-kept only for manual, ad-hoc developer use — moved here (via `git mv`, full
-history preserved) from the project root during a project cleanup.
+These predate the `tests/` suite and the
+`run_feature_engineering_real.py` / `run_model_training_real.py` pipeline.
+They are not part of the test suite or CI and are kept only for occasional
+manual use.
 
 | File | What it does | Superseded by |
 |---|---|---|
