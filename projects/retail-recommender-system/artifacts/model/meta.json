@@ -1,0 +1,39 @@
+{
+  "model_type": "item_item_cooccurrence",
+  "version": "20260907143213",
+  "built_at": "2026-09-07T14:32:13+00:00",
+  "query_items": 20,
+  "filter_seen": true,
+  "default_n": 10,
+  "max_n": 100,
+  "event_weights": {
+    "view": 1,
+    "addtocart": 3,
+    "transaction": 5
+  },
+  "split": {
+    "train_end": "2015-08-21",
+    "history_before": "2015-09-05",
+    "test": [
+      "2015-09-05",
+      "2015-09-18"
+    ]
+  },
+  "catalog_size": 213966,
+  "n_items_with_neighbours": 136695,
+  "n_neighbour_pairs": 3472372,
+  "n_users_with_history": 1287827,
+  "n_history_events": 2438107,
+  "global_fallback_size": 3000,
+  "test_metrics": {
+    "recall@10": 0.01156,
+    "ndcg@10": 0.00857,
+    "recall@10_warm": 0.02213,
+    "coverage@10": 0.018667,
+    "n_test_users": 3432
+  },
+  "artifact_files": [
+    "model.npz",
+    "meta.json"
+  ]
+}

@@ -14,6 +14,13 @@ jupyter>=1.0
 nbclient>=0.8
 nbformat>=5.9
 
-# модели ALS / BPR (неделя 3) — отдельное окружение:
+# модели ALS / BPR — отдельное окружение:
 #   pip install "numpy<2" "implicit>=0.7,<0.8"
 # implicit быстрее и стабильнее работает с numpy<2, см. README, раздел «Модели»
+
+# сервис рекомендаций (нужен для tests/test_service.py и локального запуска)
+fastapi>=0.110
+uvicorn>=0.27
+pydantic>=2.6
+prometheus-client>=0.20
+httpx>=0.27

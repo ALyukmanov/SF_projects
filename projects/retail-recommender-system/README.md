@@ -5,7 +5,8 @@
 (журнал событий за ~4.5 месяца 2015 года).
 
 Сделано: разведочный анализ данных, подготовка признаков с целевой переменной,
-сравнение baseline-моделей и коллаборативной фильтрации (ALS, BPR).
+сравнение baseline-моделей и коллаборативной фильтрации (ALS, BPR), MVP-сервис
+рекомендаций на FastAPI в Docker.
 
 ## Задача
 
@@ -84,10 +85,15 @@ src/retail_recommender/
   eda.py                      агрегации для ноутбука
   evaluation/{metrics,protocol}.py   offline-метрики и протокол оценки моделей
   models/                     baseline (popularity, category-popularity, co-occurrence) + ALS/BPR
+  service/                    FastAPI-приложение: app, recommender, schemas, metrics, artifact
 scripts/                      build_dataset, validate_data, run_model_experiments,
-                               build_top_properties, make_*_notebook
+                               build_top_properties, make_*_notebook, train_service_model
 tests/                        дедуп/веса/боты, дерево категорий, as-of, признаки, target,
-                               метрики, protocol без утечки, модели (ALS/BPR)
+                               метрики, protocol без утечки, модели (ALS/BPR), сервис
+artifacts/model/               экспортированный артефакт co-occurrence модели (~25 МБ)
+Dockerfile, .dockerignore     образ сервиса
+docs/service.md                данные, признаки, эксперименты, модель, API, Docker
+reports/                       week3_metrics.json, project_presentation.pptx/.pdf
 ```
 
 ## Запуск
@@ -134,3 +140,32 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/03_models.ipynb
 (Recall@10 = 0.0116, WARM 0.0221) — ALS и BPR на validation слегка опережали
 baseline на warm-пользователях, но на test это не подтвердилось (подробный
 разбор — в `notebooks/03_models.ipynb`, раздел 9).
+
+## Сервис (MVP)
+
+Полная документация — [`docs/service.md`](docs/service.md).
+
+```bash
+python scripts/train_service_model.py                   # -> artifacts/model/
+uvicorn retail_recommender.service.app:app --port 8000   # локально
+#  или:
+docker build -t retail-recommender-system:latest .
+docker run --rm -p 8000:8000 retail-recommender-system:latest
+```
+
+Эндпоинты: `GET /health`, `GET /model-info`, `POST /recommend`, `GET /metrics`.
+
+```bash
+curl -X POST localhost:8000/recommend \
+  -H 'content-type: application/json' -d '{"visitorid": 874017, "n": 10}'
+```
+
+Неизвестный визитор → рекомендации по популярности (`fallback: true`), сервис не
+падает; некорректный запрос → `HTTP 422`, а не 500. Сервис использует ту же
+co-occurrence модель, что и эксперименты, поднятую из `artifacts/model/`.
+
+## Презентация
+
+`reports/project_presentation.pptx` (+ `.pdf`), 7 слайдов —
+`python scripts/make_presentation.py`. Числа берутся из `reports/week3_metrics.json`
+и `reports/build_report.md`.

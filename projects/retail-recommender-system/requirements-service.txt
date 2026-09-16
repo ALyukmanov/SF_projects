@@ -1,0 +1,9 @@
+# Рантайм сервиса рекомендаций (Docker). Ставится отдельно от dev-окружения.
+numpy==1.26.4
+pandas==2.3.3
+scipy==1.13.1
+PyYAML==6.0.3
+fastapi==0.141.1
+uvicorn==0.52.4
+pydantic==2.13.5
+prometheus-client==0.26.0

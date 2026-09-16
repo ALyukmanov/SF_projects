@@ -1,0 +1,28 @@
+# Всё, что не нужно в образе сервиса.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+data/
+notebooks/
+reports/
+tests/
+docs/
+
+# в образ кладём только artifacts/model/, остальное из artifacts/ — нет
+artifacts/docker/
+artifacts/*.tar
+
+.git/
+.gitignore
+*.md
+!README.md
+
+scripts/make_*_notebook.py
+scripts/make_week3_slides.py
+scripts/make_presentation.py

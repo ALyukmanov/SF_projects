@@ -5,8 +5,9 @@ data/processed/
 *.parquet
 *.csv
 
-# Обученные модели / сериализованные артефакты
-artifacts/
+# Обученные модели / сериализованные артефакты — кроме экспорта для сервиса
+artifacts/*
+!artifacts/model/
 *.pkl
 *.joblib
 *.npy
