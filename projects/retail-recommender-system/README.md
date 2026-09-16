@@ -145,10 +145,19 @@ baseline на warm-пользователях, но на test это не под
 
 Полная документация — [`docs/service.md`](docs/service.md).
 
+Готовый образ — [GitHub Packages](https://github.com/users/ALyukmanov/packages/container/package/retail-recommender-system):
+
+```bash
+docker pull ghcr.io/alyukmanov/retail-recommender-system:latest
+docker run --rm -p 8000:8000 ghcr.io/alyukmanov/retail-recommender-system:latest
+```
+
+Локально:
+
 ```bash
 python scripts/train_service_model.py                   # -> artifacts/model/
 uvicorn retail_recommender.service.app:app --port 8000   # локально
-#  или:
+#  или сборка своего образа:
 docker build -t retail-recommender-system:latest .
 docker run --rm -p 8000:8000 retail-recommender-system:latest
 ```
@@ -166,6 +175,7 @@ co-occurrence модель, что и эксперименты, поднятую
 
 ## Презентация
 
-`reports/project_presentation.pptx` (+ `.pdf`), 7 слайдов —
+[`reports/project_presentation.pdf`](reports/project_presentation.pdf) (быстрый
+просмотр) / [`.pptx`](reports/project_presentation.pptx) (исходник), 7 слайдов —
 `python scripts/make_presentation.py`. Числа берутся из `reports/week3_metrics.json`
 и `reports/build_report.md`.

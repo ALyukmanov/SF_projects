@@ -171,6 +171,15 @@ uvicorn retail_recommender.service.app:app --host 0.0.0.0 --port 8000
 
 ## Docker
 
+Готовый образ — [GitHub Packages](https://github.com/users/ALyukmanov/packages/container/package/retail-recommender-system):
+
+```bash
+docker pull ghcr.io/alyukmanov/retail-recommender-system:latest
+docker run --rm -p 8000:8000 ghcr.io/alyukmanov/retail-recommender-system:latest
+```
+
+Или сборка своего образа:
+
 ```bash
 python scripts/train_service_model.py            # артефакт нужен на этапе сборки
 docker build -t retail-recommender-system:latest .
