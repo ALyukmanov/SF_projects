@@ -13,3 +13,7 @@ pytest>=7.0
 jupyter>=1.0
 nbclient>=0.8
 nbformat>=5.9
+
+# модели ALS / BPR (неделя 3) — отдельное окружение:
+#   pip install "numpy<2" "implicit>=0.7,<0.8"
+# implicit быстрее и стабильнее работает с numpy<2, см. README, раздел «Модели»

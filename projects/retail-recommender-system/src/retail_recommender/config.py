@@ -43,6 +43,8 @@ class Config:
     split: SplitBounds
     properties_first_snapshot: str
     feature_engineering: dict[str, Any]
+    evaluation: dict[str, Any]
+    cooccurrence: dict[str, Any]
     random_seed: int
     raw_files: dict[str, Any] = field(default_factory=dict)
 
@@ -86,5 +88,7 @@ def load_config(path: str | Path | None = None) -> Config:
         split=SplitBounds(**raw["split"]),
         properties_first_snapshot=raw["properties_first_snapshot"],
         feature_engineering=raw["feature_engineering"],
+        evaluation=raw["evaluation"],
+        cooccurrence=raw["cooccurrence"],
         random_seed=int(raw["random_seed"]),
     )

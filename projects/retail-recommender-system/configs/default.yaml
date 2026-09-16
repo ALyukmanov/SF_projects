@@ -48,4 +48,20 @@ feature_engineering:
   cutoff: "2015-07-01"
   label_window_end: "2015-09-18"
 
+# Оценка моделей (неделя 3).
+evaluation:
+  k_values: [10, 20]
+  primary_k: 10
+  # already-seen policy: основная оценка исключает train-items пользователя.
+  filter_seen: true
+  history_segments: [[1, 1], [2, 4], [5, null]]
+
+cooccurrence:
+  # co-occurrence считается только по пользователям с числом уникальных train-товаров в этом диапазоне
+  min_user_items: 2
+  max_user_items: 200
+  top_neighbours: 100
+  # сколько последних/сильных товаров истории пользователя брать как "запрос"
+  user_query_items: 20
+
 random_seed: 42

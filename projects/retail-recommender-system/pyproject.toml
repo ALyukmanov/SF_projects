@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "retail-recommender-system"
-version = "0.2.0"
-description = "RetailRocket recommender — EDA и подготовка признаков"
+version = "0.3.0"
+description = "RetailRocket recommender — EDA, признаки и сравнение моделей"
 requires-python = ">=3.10"
 dependencies = [
     "pandas>=2.0",

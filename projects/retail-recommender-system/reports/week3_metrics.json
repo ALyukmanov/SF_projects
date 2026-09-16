@@ -1,0 +1,1541 @@
+{
+  "protocol": {
+    "mode": "strong",
+    "primary": "recall@10",
+    "secondary": "ndcg@10",
+    "candidate_pool": "full train catalog (не сужается)",
+    "filter_seen": true,
+    "event_weights": {
+      "view": 1,
+      "addtocart": 3,
+      "transaction": 5
+    },
+    "confidence": "1 + Σ(веса событий пары) — одинаково для ALS и BPR",
+    "split": {
+      "train_end": "2015-08-21",
+      "val": [
+        "2015-08-22",
+        "2015-09-04"
+      ],
+      "test": [
+        "2015-09-05",
+        "2015-09-18"
+      ]
+    },
+    "n_target_users": {
+      "val": 3850,
+      "test": 3432
+    },
+    "n_warm_users": {
+      "val": 472,
+      "test": 495
+    },
+    "catalog_size": 213966,
+    "lightfm_note": "LightFM рассматривался как гибридный кандидат, но в текущей Windows-среде скомпилированное C-расширение нестабильно при обучении, поэтому в итоговое сравнение вошли ALS и BPR."
+  },
+  "baselines": {
+    "global_popularity": {
+      "val": {
+        "ALL": {
+          "recall@10": 0.00812,
+          "ndcg@10": 0.00719,
+          "recall@20": 0.01569,
+          "ndcg@20": 0.0091,
+          "hit_rate@10": 0.01091,
+          "map@10": 0.00639,
+          "coverage@10": 5.6e-05,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.008,
+          "ndcg@10": 0.0062,
+          "recall@20": 0.01442,
+          "ndcg@20": 0.00774,
+          "hit_rate@10": 0.01483,
+          "map@10": 0.00471,
+          "coverage@10": 5.6e-05,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01316,
+          "ndcg@10": 0.00723,
+          "recall@20": 0.01974,
+          "ndcg@20": 0.00875,
+          "hit_rate@10": 0.01974,
+          "map@10": 0.00439,
+          "coverage@10": 5.1e-05,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.01367,
+          "ndcg@10": 0.01404,
+          "recall@20": 0.01367,
+          "ndcg@20": 0.01391,
+          "hit_rate@10": 0.03077,
+          "map@10": 0.01197,
+          "coverage@10": 5.1e-05,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.0,
+          "ndcg@10": 0.0,
+          "recall@20": 0.01067,
+          "ndcg@20": 0.0027,
+          "hit_rate@10": 0.0,
+          "map@10": 0.0,
+          "coverage@10": 5.6e-05,
+          "n_users": 190
+        }
+      },
+      "test": {
+        "ALL": {
+          "recall@10": 0.00911,
+          "ndcg@10": 0.00704,
+          "recall@20": 0.01264,
+          "ndcg@20": 0.00796,
+          "hit_rate@10": 0.01282,
+          "map@10": 0.00556,
+          "coverage@10": 5.6e-05,
+          "n_users": 3432
+        },
+        "WARM": {
+          "recall@10": 0.00515,
+          "ndcg@10": 0.00432,
+          "recall@20": 0.00717,
+          "ndcg@20": 0.00486,
+          "hit_rate@10": 0.0101,
+          "map@10": 0.00325,
+          "coverage@10": 5.6e-05,
+          "n_users": 495
+        },
+        "COLD": {
+          "recall@10": 0.00978,
+          "ndcg@10": 0.00749,
+          "recall@20": 0.01356,
+          "ndcg@20": 0.00848,
+          "hit_rate@10": 0.01328,
+          "map@10": 0.00595,
+          "coverage@10": 4.7e-05,
+          "n_users": 2937
+        },
+        "hist=1": {
+          "recall@10": 0.00629,
+          "ndcg@10": 0.0021,
+          "recall@20": 0.00629,
+          "ndcg@20": 0.0021,
+          "hit_rate@10": 0.00629,
+          "map@10": 0.0009,
+          "coverage@10": 4.7e-05,
+          "n_users": 159
+        },
+        "hist=2-4": {
+          "recall@10": 0.00893,
+          "ndcg@10": 0.00993,
+          "recall@20": 0.01607,
+          "ndcg@20": 0.01186,
+          "hit_rate@10": 0.01429,
+          "map@10": 0.00893,
+          "coverage@10": 5.1e-05,
+          "n_users": 140
+        },
+        "hist>=5": {
+          "recall@10": 0.00153,
+          "ndcg@10": 0.0021,
+          "recall@20": 0.00153,
+          "ndcg@20": 0.0021,
+          "hit_rate@10": 0.0102,
+          "map@10": 0.00109,
+          "coverage@10": 5.6e-05,
+          "n_users": 196
+        }
+      }
+    },
+    "category_popularity": {
+      "val": {
+        "ALL": {
+          "recall@10": 0.00895,
+          "ndcg@10": 0.00747,
+          "recall@20": 0.01652,
+          "ndcg@20": 0.00936,
+          "hit_rate@10": 0.01247,
+          "map@10": 0.00638,
+          "coverage@10": 0.010254,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.0148,
+          "ndcg@10": 0.00848,
+          "recall@20": 0.02124,
+          "ndcg@20": 0.00985,
+          "hit_rate@10": 0.02754,
+          "map@10": 0.00466,
+          "coverage@10": 0.010254,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.02303,
+          "ndcg@10": 0.00725,
+          "recall@20": 0.02303,
+          "ndcg@20": 0.00725,
+          "hit_rate@10": 0.02632,
+          "map@10": 0.00265,
+          "coverage@10": 0.004421,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.01405,
+          "ndcg@10": 0.00917,
+          "recall@20": 0.03713,
+          "ndcg@20": 0.01474,
+          "hit_rate@10": 0.03077,
+          "map@10": 0.00561,
+          "coverage@10": 0.004005,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.00873,
+          "ndcg@10": 0.00899,
+          "recall@20": 0.00895,
+          "ndcg@20": 0.00858,
+          "hit_rate@10": 0.02632,
+          "map@10": 0.00561,
+          "coverage@10": 0.005468,
+          "n_users": 190
+        }
+      },
+      "test": {
+        "ALL": {
+          "recall@10": 0.01157,
+          "ndcg@10": 0.00828,
+          "recall@20": 0.01719,
+          "ndcg@20": 0.00978,
+          "hit_rate@10": 0.01486,
+          "map@10": 0.00652,
+          "coverage@10": 0.011151,
+          "n_users": 3432
+        },
+        "WARM": {
+          "recall@10": 0.02222,
+          "ndcg@10": 0.01297,
+          "recall@20": 0.03872,
+          "ndcg@20": 0.01751,
+          "hit_rate@10": 0.02424,
+          "map@10": 0.00994,
+          "coverage@10": 0.011151,
+          "n_users": 495
+        },
+        "COLD": {
+          "recall@10": 0.00978,
+          "ndcg@10": 0.00749,
+          "recall@20": 0.01356,
+          "ndcg@20": 0.00848,
+          "hit_rate@10": 0.01328,
+          "map@10": 0.00595,
+          "coverage@10": 4.7e-05,
+          "n_users": 2937
+        },
+        "hist=1": {
+          "recall@10": 0.03145,
+          "ndcg@10": 0.01275,
+          "recall@20": 0.04717,
+          "ndcg@20": 0.01713,
+          "hit_rate@10": 0.03145,
+          "map@10": 0.00719,
+          "coverage@10": 0.004781,
+          "n_users": 159
+        },
+        "hist=2-4": {
+          "recall@10": 0.025,
+          "ndcg@10": 0.01762,
+          "recall@20": 0.03929,
+          "ndcg@20": 0.02113,
+          "hit_rate@10": 0.02857,
+          "map@10": 0.01536,
+          "coverage@10": 0.004127,
+          "n_users": 140
+        },
+        "hist>=5": {
+          "recall@10": 0.01276,
+          "ndcg@10": 0.00984,
+          "recall@20": 0.03146,
+          "ndcg@20": 0.01522,
+          "hit_rate@10": 0.01531,
+          "map@10": 0.00829,
+          "coverage@10": 0.00595,
+          "n_users": 196
+        }
+      }
+    },
+    "item_item_cooccurrence": {
+      "val": {
+        "ALL": {
+          "recall@10": 0.00896,
+          "ndcg@10": 0.00769,
+          "recall@20": 0.01649,
+          "ndcg@20": 0.0096,
+          "hit_rate@10": 0.01299,
+          "map@10": 0.00664,
+          "coverage@10": 0.01755,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01489,
+          "ndcg@10": 0.01027,
+          "recall@20": 0.02098,
+          "ndcg@20": 0.01179,
+          "hit_rate@10": 0.03178,
+          "map@10": 0.00675,
+          "coverage@10": 0.01755,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01316,
+          "ndcg@10": 0.0067,
+          "recall@20": 0.01974,
+          "ndcg@20": 0.00838,
+          "hit_rate@10": 0.01316,
+          "map@10": 0.00461,
+          "coverage@10": 0.005664,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.01623,
+          "ndcg@10": 0.01067,
+          "recall@20": 0.02393,
+          "ndcg@20": 0.01271,
+          "hit_rate@10": 0.03846,
+          "map@10": 0.00643,
+          "coverage@10": 0.005566,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.01536,
+          "ndcg@10": 0.01286,
+          "recall@20": 0.01997,
+          "ndcg@20": 0.01389,
+          "hit_rate@10": 0.04211,
+          "map@10": 0.00869,
+          "coverage@10": 0.007917,
+          "n_users": 190
+        }
+      },
+      "test": {
+        "ALL": {
+          "recall@10": 0.01156,
+          "ndcg@10": 0.00857,
+          "recall@20": 0.01704,
+          "ndcg@20": 0.00999,
+          "hit_rate@10": 0.0169,
+          "map@10": 0.00658,
+          "coverage@10": 0.018667,
+          "n_users": 3432
+        },
+        "WARM": {
+          "recall@10": 0.02213,
+          "ndcg@10": 0.01494,
+          "recall@20": 0.03768,
+          "ndcg@20": 0.01899,
+          "hit_rate@10": 0.03838,
+          "map@10": 0.01035,
+          "coverage@10": 0.018667,
+          "n_users": 495
+        },
+        "COLD": {
+          "recall@10": 0.00978,
+          "ndcg@10": 0.00749,
+          "recall@20": 0.01356,
+          "ndcg@20": 0.00848,
+          "hit_rate@10": 0.01328,
+          "map@10": 0.00595,
+          "coverage@10": 4.7e-05,
+          "n_users": 2937
+        },
+        "hist=1": {
+          "recall@10": 0.00314,
+          "ndcg@10": 0.00116,
+          "recall@20": 0.02201,
+          "ndcg@20": 0.00574,
+          "hit_rate@10": 0.00629,
+          "map@10": 0.00035,
+          "coverage@10": 0.005996,
+          "n_users": 159
+        },
+        "hist=2-4": {
+          "recall@10": 0.05714,
+          "ndcg@10": 0.03361,
+          "recall@20": 0.07857,
+          "ndcg@20": 0.03911,
+          "hit_rate@10": 0.07143,
+          "map@10": 0.02446,
+          "coverage@10": 0.006015,
+          "n_users": 140
+        },
+        "hist>=5": {
+          "recall@10": 0.01252,
+          "ndcg@10": 0.01277,
+          "recall@20": 0.02119,
+          "ndcg@20": 0.01536,
+          "hit_rate@10": 0.04082,
+          "map@10": 0.00839,
+          "coverage@10": 0.008277,
+          "n_users": 196
+        }
+      }
+    }
+  },
+  "val_experiments": {
+    "als": {
+      "factors=32,reg=0.01,iters=20": {
+        "params": {
+          "factors": 32,
+          "regularization": 0.01,
+          "iterations": 20
+        },
+        "fit_sec": 126.9,
+        "eval_sec": 5.83,
+        "ALL": {
+          "recall@10": 0.00939,
+          "ndcg@10": 0.00785,
+          "recall@20": 0.01648,
+          "ndcg@20": 0.00966,
+          "hit_rate@10": 0.01325,
+          "map@10": 0.00668,
+          "coverage@10": 0.001883,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01838,
+          "ndcg@10": 0.01152,
+          "recall@20": 0.02092,
+          "ndcg@20": 0.01226,
+          "hit_rate@10": 0.0339,
+          "map@10": 0.00712,
+          "coverage@10": 0.001883,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01919,
+          "ndcg@10": 0.00741,
+          "recall@20": 0.02248,
+          "ndcg@20": 0.00847,
+          "hit_rate@10": 0.02632,
+          "map@10": 0.00313,
+          "coverage@10": 0.001435,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.01774,
+          "ndcg@10": 0.0148,
+          "recall@20": 0.01774,
+          "ndcg@20": 0.0146,
+          "hit_rate@10": 0.03846,
+          "map@10": 0.01032,
+          "coverage@10": 0.001393,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.01817,
+          "ndcg@10": 0.01257,
+          "recall@20": 0.02185,
+          "ndcg@20": 0.01368,
+          "hit_rate@10": 0.03684,
+          "map@10": 0.00813,
+          "coverage@10": 0.001547,
+          "n_users": 190
+        }
+      },
+      "factors=32,reg=0.1,iters=20": {
+        "params": {
+          "factors": 32,
+          "regularization": 0.1,
+          "iterations": 20
+        },
+        "fit_sec": 130.16,
+        "eval_sec": 5.68,
+        "ALL": {
+          "recall@10": 0.00939,
+          "ndcg@10": 0.00781,
+          "recall@20": 0.01674,
+          "ndcg@20": 0.00968,
+          "hit_rate@10": 0.01325,
+          "map@10": 0.00664,
+          "coverage@10": 0.001879,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01838,
+          "ndcg@10": 0.0112,
+          "recall@20": 0.02304,
+          "ndcg@20": 0.01242,
+          "hit_rate@10": 0.0339,
+          "map@10": 0.00674,
+          "coverage@10": 0.001879,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01919,
+          "ndcg@10": 0.00728,
+          "recall@20": 0.02906,
+          "ndcg@20": 0.00984,
+          "hit_rate@10": 0.02632,
+          "map@10": 0.00303,
+          "coverage@10": 0.001444,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.01774,
+          "ndcg@10": 0.01379,
+          "recall@20": 0.01774,
+          "ndcg@20": 0.01359,
+          "hit_rate@10": 0.03846,
+          "map@10": 0.00904,
+          "coverage@10": 0.001383,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.01817,
+          "ndcg@10": 0.01257,
+          "recall@20": 0.02185,
+          "ndcg@20": 0.01368,
+          "hit_rate@10": 0.03684,
+          "map@10": 0.00813,
+          "coverage@10": 0.001547,
+          "n_users": 190
+        }
+      },
+      "factors=32,reg=1.0,iters=20": {
+        "params": {
+          "factors": 32,
+          "regularization": 1.0,
+          "iterations": 20
+        },
+        "fit_sec": 132.0,
+        "eval_sec": 9.25,
+        "ALL": {
+          "recall@10": 0.00939,
+          "ndcg@10": 0.00781,
+          "recall@20": 0.01648,
+          "ndcg@20": 0.00961,
+          "hit_rate@10": 0.01325,
+          "map@10": 0.00663,
+          "coverage@10": 0.001879,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01838,
+          "ndcg@10": 0.01119,
+          "recall@20": 0.02092,
+          "ndcg@20": 0.0119,
+          "hit_rate@10": 0.0339,
+          "map@10": 0.00671,
+          "coverage@10": 0.001879,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01919,
+          "ndcg@10": 0.00721,
+          "recall@20": 0.02248,
+          "ndcg@20": 0.00824,
+          "hit_rate@10": 0.02632,
+          "map@10": 0.00293,
+          "coverage@10": 0.001444,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.01774,
+          "ndcg@10": 0.01379,
+          "recall@20": 0.01774,
+          "ndcg@20": 0.01359,
+          "hit_rate@10": 0.03846,
+          "map@10": 0.00904,
+          "coverage@10": 0.001369,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.01817,
+          "ndcg@10": 0.01259,
+          "recall@20": 0.02185,
+          "ndcg@20": 0.01367,
+          "hit_rate@10": 0.03684,
+          "map@10": 0.00814,
+          "coverage@10": 0.001542,
+          "n_users": 190
+        }
+      },
+      "factors=64,reg=0.01,iters=20": {
+        "params": {
+          "factors": 64,
+          "regularization": 0.01,
+          "iterations": 20
+        },
+        "fit_sec": 287.85,
+        "eval_sec": 7.08,
+        "ALL": {
+          "recall@10": 0.00938,
+          "ndcg@10": 0.00782,
+          "recall@20": 0.01642,
+          "ndcg@20": 0.0096,
+          "hit_rate@10": 0.01351,
+          "map@10": 0.00661,
+          "coverage@10": 0.003543,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01827,
+          "ndcg@10": 0.0113,
+          "recall@20": 0.02039,
+          "ndcg@20": 0.01177,
+          "hit_rate@10": 0.03602,
+          "map@10": 0.0065,
+          "coverage@10": 0.003543,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01425,
+          "ndcg@10": 0.00588,
+          "recall@20": 0.01425,
+          "ndcg@20": 0.00588,
+          "hit_rate@10": 0.01974,
+          "map@10": 0.00261,
+          "coverage@10": 0.002393,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.02543,
+          "ndcg@10": 0.01666,
+          "recall@20": 0.03312,
+          "ndcg@20": 0.01866,
+          "hit_rate@10": 0.04615,
+          "map@10": 0.01033,
+          "coverage@10": 0.002281,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.01659,
+          "ndcg@10": 0.01196,
+          "recall@20": 0.01659,
+          "ndcg@20": 0.01177,
+          "hit_rate@10": 0.04211,
+          "map@10": 0.00699,
+          "coverage@10": 0.002627,
+          "n_users": 190
+        }
+      },
+      "factors=64,reg=0.1,iters=20": {
+        "params": {
+          "factors": 64,
+          "regularization": 0.1,
+          "iterations": 20
+        },
+        "fit_sec": 161.44,
+        "eval_sec": 5.73,
+        "ALL": {
+          "recall@10": 0.00938,
+          "ndcg@10": 0.00782,
+          "recall@20": 0.01642,
+          "ndcg@20": 0.0096,
+          "hit_rate@10": 0.01351,
+          "map@10": 0.00661,
+          "coverage@10": 0.003515,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01827,
+          "ndcg@10": 0.01133,
+          "recall@20": 0.02039,
+          "ndcg@20": 0.01181,
+          "hit_rate@10": 0.03602,
+          "map@10": 0.00654,
+          "coverage@10": 0.003515,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01425,
+          "ndcg@10": 0.006,
+          "recall@20": 0.01425,
+          "ndcg@20": 0.006,
+          "hit_rate@10": 0.01974,
+          "map@10": 0.00273,
+          "coverage@10": 0.002393,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.02543,
+          "ndcg@10": 0.01666,
+          "recall@20": 0.03312,
+          "ndcg@20": 0.01866,
+          "hit_rate@10": 0.04615,
+          "map@10": 0.01033,
+          "coverage@10": 0.002262,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.01659,
+          "ndcg@10": 0.01194,
+          "recall@20": 0.01659,
+          "ndcg@20": 0.01176,
+          "hit_rate@10": 0.04211,
+          "map@10": 0.00698,
+          "coverage@10": 0.002608,
+          "n_users": 190
+        }
+      },
+      "factors=64,reg=1.0,iters=20": {
+        "params": {
+          "factors": 64,
+          "regularization": 1.0,
+          "iterations": 20
+        },
+        "fit_sec": 127.45,
+        "eval_sec": 5.95,
+        "ALL": {
+          "recall@10": 0.00936,
+          "ndcg@10": 0.00782,
+          "recall@20": 0.01642,
+          "ndcg@20": 0.00961,
+          "hit_rate@10": 0.01325,
+          "map@10": 0.00662,
+          "coverage@10": 0.003496,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01815,
+          "ndcg@10": 0.01127,
+          "recall@20": 0.02039,
+          "ndcg@20": 0.01187,
+          "hit_rate@10": 0.0339,
+          "map@10": 0.00658,
+          "coverage@10": 0.003496,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01425,
+          "ndcg@10": 0.00603,
+          "recall@20": 0.01425,
+          "ndcg@20": 0.00603,
+          "hit_rate@10": 0.01974,
+          "map@10": 0.0027,
+          "coverage@10": 0.002388,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.025,
+          "ndcg@10": 0.01641,
+          "recall@20": 0.03312,
+          "ndcg@20": 0.01888,
+          "hit_rate@10": 0.03846,
+          "map@10": 0.01051,
+          "coverage@10": 0.00222,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.01659,
+          "ndcg@10": 0.01194,
+          "recall@20": 0.01659,
+          "ndcg@20": 0.01176,
+          "hit_rate@10": 0.04211,
+          "map@10": 0.00698,
+          "coverage@10": 0.002585,
+          "n_users": 190
+        }
+      },
+      "factors=64,reg=0.1,iters=40": {
+        "params": {
+          "factors": 64,
+          "regularization": 0.1,
+          "iterations": 40
+        },
+        "fit_sec": 449.81,
+        "eval_sec": 9.16,
+        "ALL": {
+          "recall@10": 0.00949,
+          "ndcg@10": 0.00783,
+          "recall@20": 0.01668,
+          "ndcg@20": 0.00968,
+          "hit_rate@10": 0.01299,
+          "map@10": 0.00663,
+          "coverage@10": 0.003496,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01915,
+          "ndcg@10": 0.0114,
+          "recall@20": 0.02251,
+          "ndcg@20": 0.01244,
+          "hit_rate@10": 0.03178,
+          "map@10": 0.0067,
+          "coverage@10": 0.003496,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01096,
+          "ndcg@10": 0.00463,
+          "recall@20": 0.01425,
+          "ndcg@20": 0.00572,
+          "hit_rate@10": 0.01316,
+          "map@10": 0.00211,
+          "coverage@10": 0.002449,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.025,
+          "ndcg@10": 0.01675,
+          "recall@20": 0.03312,
+          "ndcg@20": 0.01907,
+          "hit_rate@10": 0.03846,
+          "map@10": 0.0109,
+          "coverage@10": 0.002253,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.02171,
+          "ndcg@10": 0.01315,
+          "recall@20": 0.02185,
+          "ndcg@20": 0.01329,
+          "hit_rate@10": 0.04211,
+          "map@10": 0.00749,
+          "coverage@10": 0.002594,
+          "n_users": 190
+        }
+      }
+    },
+    "bpr": {
+      "factors=32,lr=0.01,reg=0.01,iters=150": {
+        "params": {
+          "factors": 32,
+          "learning_rate": 0.01,
+          "regularization": 0.01,
+          "iterations": 150
+        },
+        "fit_sec": 164.95,
+        "eval_sec": 8.5,
+        "ALL": {
+          "recall@10": 0.00905,
+          "ndcg@10": 0.00727,
+          "recall@20": 0.01624,
+          "ndcg@20": 0.00912,
+          "hit_rate@10": 0.01247,
+          "map@10": 0.0062,
+          "coverage@10": 0.01174,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01561,
+          "ndcg@10": 0.00682,
+          "recall@20": 0.01893,
+          "ndcg@20": 0.00784,
+          "hit_rate@10": 0.02754,
+          "map@10": 0.00319,
+          "coverage@10": 0.011698,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01645,
+          "ndcg@10": 0.00554,
+          "recall@20": 0.01645,
+          "ndcg@20": 0.00554,
+          "hit_rate@10": 0.01974,
+          "map@10": 0.00217,
+          "coverage@10": 0.002986,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.00154,
+          "ndcg@10": 0.00093,
+          "recall@20": 0.00538,
+          "ndcg@20": 0.00206,
+          "hit_rate@10": 0.00769,
+          "map@10": 0.00026,
+          "coverage@10": 0.004337,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.02456,
+          "ndcg@10": 0.01188,
+          "recall@20": 0.03017,
+          "ndcg@20": 0.01364,
+          "hit_rate@10": 0.04737,
+          "map@10": 0.00601,
+          "coverage@10": 0.006492,
+          "n_users": 190
+        }
+      },
+      "factors=32,lr=0.05,reg=0.01,iters=150": {
+        "params": {
+          "factors": 32,
+          "learning_rate": 0.05,
+          "regularization": 0.01,
+          "iterations": 150
+        },
+        "fit_sec": 150.34,
+        "eval_sec": 7.19,
+        "ALL": {
+          "recall@10": 0.00792,
+          "ndcg@10": 0.00708,
+          "recall@20": 0.01575,
+          "ndcg@20": 0.00908,
+          "hit_rate@10": 0.01117,
+          "map@10": 0.00624,
+          "coverage@10": 0.019933,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.00637,
+          "ndcg@10": 0.00526,
+          "recall@20": 0.01492,
+          "ndcg@20": 0.00753,
+          "hit_rate@10": 0.01695,
+          "map@10": 0.00351,
+          "coverage@10": 0.019891,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.00329,
+          "ndcg@10": 0.00255,
+          "recall@20": 0.00987,
+          "ndcg@20": 0.00412,
+          "hit_rate@10": 0.00658,
+          "map@10": 0.00164,
+          "coverage@10": 0.006931,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.0041,
+          "ndcg@10": 0.00293,
+          "recall@20": 0.01179,
+          "ndcg@20": 0.00518,
+          "hit_rate@10": 0.01538,
+          "map@10": 0.00124,
+          "coverage@10": 0.005968,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.0104,
+          "ndcg@10": 0.00902,
+          "recall@20": 0.0211,
+          "ndcg@20": 0.01187,
+          "hit_rate@10": 0.02632,
+          "map@10": 0.00656,
+          "coverage@10": 0.008034,
+          "n_users": 190
+        }
+      },
+      "factors=64,lr=0.01,reg=0.01,iters=150": {
+        "params": {
+          "factors": 64,
+          "learning_rate": 0.01,
+          "regularization": 0.01,
+          "iterations": 150
+        },
+        "fit_sec": 141.91,
+        "eval_sec": 9.91,
+        "ALL": {
+          "recall@10": 0.00958,
+          "ndcg@10": 0.00764,
+          "recall@20": 0.01666,
+          "ndcg@20": 0.00944,
+          "hit_rate@10": 0.01299,
+          "map@10": 0.00646,
+          "coverage@10": 0.010581,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.01995,
+          "ndcg@10": 0.0098,
+          "recall@20": 0.02238,
+          "ndcg@20": 0.01051,
+          "hit_rate@10": 0.03178,
+          "map@10": 0.00531,
+          "coverage@10": 0.010539,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.01316,
+          "ndcg@10": 0.00563,
+          "recall@20": 0.01316,
+          "ndcg@20": 0.00563,
+          "hit_rate@10": 0.01316,
+          "map@10": 0.00329,
+          "coverage@10": 0.002421,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.00769,
+          "ndcg@10": 0.00331,
+          "recall@20": 0.01154,
+          "ndcg@20": 0.0044,
+          "hit_rate@10": 0.00769,
+          "map@10": 0.00192,
+          "coverage@10": 0.003804,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.03377,
+          "ndcg@10": 0.01757,
+          "recall@20": 0.03719,
+          "ndcg@20": 0.01858,
+          "hit_rate@10": 0.06316,
+          "map@10": 0.00924,
+          "coverage@10": 0.006225,
+          "n_users": 190
+        }
+      },
+      "factors=64,lr=0.05,reg=0.01,iters=150": {
+        "params": {
+          "factors": 64,
+          "learning_rate": 0.05,
+          "regularization": 0.01,
+          "iterations": 150
+        },
+        "fit_sec": 272.56,
+        "eval_sec": 21.3,
+        "ALL": {
+          "recall@10": 0.00794,
+          "ndcg@10": 0.00683,
+          "recall@20": 0.01572,
+          "ndcg@20": 0.00883,
+          "hit_rate@10": 0.01143,
+          "map@10": 0.00595,
+          "coverage@10": 0.019171,
+          "n_users": 3850
+        },
+        "WARM": {
+          "recall@10": 0.00657,
+          "ndcg@10": 0.00325,
+          "recall@20": 0.01469,
+          "ndcg@20": 0.00546,
+          "hit_rate@10": 0.01907,
+          "map@10": 0.00113,
+          "coverage@10": 0.019134,
+          "n_users": 472
+        },
+        "COLD": {
+          "recall@10": 0.00814,
+          "ndcg@10": 0.00733,
+          "recall@20": 0.01586,
+          "ndcg@20": 0.0093,
+          "hit_rate@10": 0.01036,
+          "map@10": 0.00662,
+          "coverage@10": 4.7e-05,
+          "n_users": 3378
+        },
+        "hist=1": {
+          "recall@10": 0.00658,
+          "ndcg@10": 0.00208,
+          "recall@20": 0.00658,
+          "ndcg@20": 0.00208,
+          "hit_rate@10": 0.00658,
+          "map@10": 0.00082,
+          "coverage@10": 0.006739,
+          "n_users": 152
+        },
+        "hist=2-4": {
+          "recall@10": 0.0,
+          "ndcg@10": 0.0,
+          "recall@20": 0.00769,
+          "ndcg@20": 0.00215,
+          "hit_rate@10": 0.0,
+          "map@10": 0.0,
+          "coverage@10": 0.005917,
+          "n_users": 130
+        },
+        "hist>=5": {
+          "recall@10": 0.01105,
+          "ndcg@10": 0.00642,
+          "recall@20": 0.02596,
+          "ndcg@20": 0.01044,
+          "hit_rate@10": 0.04211,
+          "map@10": 0.00216,
+          "coverage@10": 0.0078,
+          "n_users": 190
+        }
+      }
+    }
+  },
+  "selected": {
+    "best_baseline": "item_item_cooccurrence",
+    "als": "factors=64,reg=0.1,iters=40",
+    "bpr": "factors=64,lr=0.01,reg=0.01,iters=150",
+    "criterion": "max recall@10 на ALL/strong/val, tie-break ndcg@10",
+    "overall_by_val": "bpr:factors=64,lr=0.01,reg=0.01,iters=150"
+  },
+  "test": {
+    "item_item_cooccurrence": {
+      "ALL": {
+        "recall@10": 0.01156,
+        "ndcg@10": 0.00857,
+        "recall@20": 0.01704,
+        "ndcg@20": 0.00999,
+        "hit_rate@10": 0.0169,
+        "map@10": 0.00658,
+        "coverage@10": 0.018667,
+        "n_users": 3432
+      },
+      "WARM": {
+        "recall@10": 0.02213,
+        "ndcg@10": 0.01494,
+        "recall@20": 0.03768,
+        "ndcg@20": 0.01899,
+        "hit_rate@10": 0.03838,
+        "map@10": 0.01035,
+        "coverage@10": 0.018667,
+        "n_users": 495
+      },
+      "COLD": {
+        "recall@10": 0.00978,
+        "ndcg@10": 0.00749,
+        "recall@20": 0.01356,
+        "ndcg@20": 0.00848,
+        "hit_rate@10": 0.01328,
+        "map@10": 0.00595,
+        "coverage@10": 4.7e-05,
+        "n_users": 2937
+      },
+      "hist=1": {
+        "recall@10": 0.00314,
+        "ndcg@10": 0.00116,
+        "recall@20": 0.02201,
+        "ndcg@20": 0.00574,
+        "hit_rate@10": 0.00629,
+        "map@10": 0.00035,
+        "coverage@10": 0.005996,
+        "n_users": 159
+      },
+      "hist=2-4": {
+        "recall@10": 0.05714,
+        "ndcg@10": 0.03361,
+        "recall@20": 0.07857,
+        "ndcg@20": 0.03911,
+        "hit_rate@10": 0.07143,
+        "map@10": 0.02446,
+        "coverage@10": 0.006015,
+        "n_users": 140
+      },
+      "hist>=5": {
+        "recall@10": 0.01252,
+        "ndcg@10": 0.01277,
+        "recall@20": 0.02119,
+        "ndcg@20": 0.01536,
+        "hit_rate@10": 0.04082,
+        "map@10": 0.00839,
+        "coverage@10": 0.008277,
+        "n_users": 196
+      }
+    },
+    "als[factors=64,reg=0.1,iters=40]": {
+      "ALL": {
+        "recall@10": 0.01013,
+        "ndcg@10": 0.00751,
+        "recall@20": 0.01441,
+        "ndcg@20": 0.00863,
+        "hit_rate@10": 0.01457,
+        "map@10": 0.00581,
+        "coverage@10": 0.003192,
+        "n_users": 3432
+      },
+      "WARM": {
+        "recall@10": 0.01222,
+        "ndcg@10": 0.00759,
+        "recall@20": 0.01946,
+        "ndcg@20": 0.00955,
+        "hit_rate@10": 0.02222,
+        "map@10": 0.005,
+        "coverage@10": 0.003192,
+        "n_users": 495
+      },
+      "COLD": {
+        "recall@10": 0.00978,
+        "ndcg@10": 0.00749,
+        "recall@20": 0.01356,
+        "ndcg@20": 0.00848,
+        "hit_rate@10": 0.01328,
+        "map@10": 0.00595,
+        "coverage@10": 4.7e-05,
+        "n_users": 2937
+      },
+      "hist=1": {
+        "recall@10": 0.00314,
+        "ndcg@10": 0.00129,
+        "recall@20": 0.00943,
+        "ndcg@20": 0.00286,
+        "hit_rate@10": 0.00629,
+        "map@10": 0.00045,
+        "coverage@10": 0.002098,
+        "n_users": 159
+      },
+      "hist=2-4": {
+        "recall@10": 0.02321,
+        "ndcg@10": 0.01593,
+        "recall@20": 0.03214,
+        "ndcg@20": 0.01839,
+        "hit_rate@10": 0.02857,
+        "map@10": 0.01295,
+        "coverage@10": 0.001907,
+        "n_users": 140
+      },
+      "hist>=5": {
+        "recall@10": 0.01173,
+        "ndcg@10": 0.00676,
+        "recall@20": 0.01854,
+        "ndcg@20": 0.00865,
+        "hit_rate@10": 0.03061,
+        "map@10": 0.00301,
+        "coverage@10": 0.002402,
+        "n_users": 196
+      }
+    },
+    "bpr[factors=64,lr=0.01,reg=0.01,iters=150]": {
+      "ALL": {
+        "recall@10": 0.01006,
+        "ndcg@10": 0.00767,
+        "recall@20": 0.01337,
+        "ndcg@20": 0.00854,
+        "hit_rate@10": 0.01515,
+        "map@10": 0.00599,
+        "coverage@10": 0.008212,
+        "n_users": 3432
+      },
+      "WARM": {
+        "recall@10": 0.01177,
+        "ndcg@10": 0.00869,
+        "recall@20": 0.01228,
+        "ndcg@20": 0.00889,
+        "hit_rate@10": 0.02626,
+        "map@10": 0.00625,
+        "coverage@10": 0.008212,
+        "n_users": 495
+      },
+      "COLD": {
+        "recall@10": 0.00978,
+        "ndcg@10": 0.00749,
+        "recall@20": 0.01356,
+        "ndcg@20": 0.00848,
+        "hit_rate@10": 0.01328,
+        "map@10": 0.00595,
+        "coverage@10": 4.7e-05,
+        "n_users": 2937
+      },
+      "hist=1": {
+        "recall@10": 0.00629,
+        "ndcg@10": 0.00629,
+        "recall@20": 0.00629,
+        "ndcg@20": 0.00629,
+        "hit_rate@10": 0.00629,
+        "map@10": 0.00629,
+        "coverage@10": 0.001879,
+        "n_users": 159
+      },
+      "hist=2-4": {
+        "recall@10": 0.01429,
+        "ndcg@10": 0.00991,
+        "recall@20": 0.01429,
+        "ndcg@20": 0.00991,
+        "hit_rate@10": 0.01429,
+        "map@10": 0.00857,
+        "coverage@10": 0.002412,
+        "n_users": 140
+      },
+      "hist>=5": {
+        "recall@10": 0.01442,
+        "ndcg@10": 0.00976,
+        "recall@20": 0.01569,
+        "ndcg@20": 0.01027,
+        "hit_rate@10": 0.05102,
+        "map@10": 0.00456,
+        "coverage@10": 0.005146,
+        "n_users": 196
+      }
+    }
+  },
+  "timings_sec": {
+    "baseline:global_popularity:fit": 0.58,
+    "baseline:category_popularity:fit": 4.16,
+    "baseline:item_item_cooccurrence:fit": 14.13
+  },
+  "top_properties": {
+    "primary": {
+      "cutoff": "2015-07-01",
+      "role": "feature-generator TOP-20 (зафиксированный feature cutoff проекта)",
+      "top_codes": [
+        "888",
+        "790",
+        "available",
+        "categoryid",
+        "6",
+        "283",
+        "776",
+        "678",
+        "364",
+        "159",
+        "112",
+        "764",
+        "917",
+        "202",
+        "839",
+        "227",
+        "698",
+        "689",
+        "28",
+        "928"
+      ],
+      "top_counts": {
+        "888": 1309994,
+        "790": 869722,
+        "available": 770348,
+        "categoryid": 541898,
+        "6": 470362,
+        "283": 467481,
+        "776": 449529,
+        "678": 427116,
+        "364": 424901,
+        "159": 404350,
+        "112": 404344,
+        "764": 404300,
+        "917": 403793,
+        "202": 346456,
+        "839": 328375,
+        "227": 275352,
+        "698": 226198,
+        "689": 172429,
+        "28": 136237,
+        "928": 116835
+      },
+      "n_distinct_codes": 1075
+    },
+    "val_window_diagnostic": {
+      "cutoff": "2015-08-22",
+      "role": "train-window diagnostic для экспериментов недели 3",
+      "top_codes": [
+        "888",
+        "790",
+        "available",
+        "categoryid",
+        "6",
+        "283",
+        "776",
+        "678",
+        "364",
+        "202",
+        "112",
+        "764",
+        "917",
+        "159",
+        "839",
+        "227",
+        "698",
+        "689",
+        "451",
+        "663"
+      ],
+      "top_counts": {
+        "888": 2376581,
+        "790": 1448917,
+        "available": 1232820,
+        "categoryid": 694111,
+        "6": 568879,
+        "283": 549277,
+        "776": 528925,
+        "678": 461288,
+        "364": 456915,
+        "202": 433666,
+        "112": 411742,
+        "764": 411729,
+        "917": 411709,
+        "159": 411695,
+        "839": 406148,
+        "227": 337096,
+        "698": 282355,
+        "689": 211108,
+        "451": 202404,
+        "663": 183865
+      },
+      "n_distinct_codes": 1101
+    },
+    "lists_identical": false,
+    "only_in_primary": [
+      "28",
+      "928"
+    ],
+    "only_in_val_window": [
+      "451",
+      "663"
+    ],
+    "cutoff": "2015-07-01",
+    "top_codes": [
+      "888",
+      "790",
+      "available",
+      "categoryid",
+      "6",
+      "283",
+      "776",
+      "678",
+      "364",
+      "159",
+      "112",
+      "764",
+      "917",
+      "202",
+      "839",
+      "227",
+      "698",
+      "689",
+      "28",
+      "928"
+    ],
+    "top_counts": {
+      "888": 1309994,
+      "790": 869722,
+      "available": 770348,
+      "categoryid": 541898,
+      "6": 470362,
+      "283": 467481,
+      "776": 449529,
+      "678": 427116,
+      "364": 424901,
+      "159": 404350,
+      "112": 404344,
+      "764": 404300,
+      "917": 403793,
+      "202": 346456,
+      "839": 328375,
+      "227": 275352,
+      "698": 226198,
+      "689": 172429,
+      "28": 136237,
+      "928": 116835
+    },
+    "top_n": 20,
+    "n_distinct_codes": 1075
+  }
+}

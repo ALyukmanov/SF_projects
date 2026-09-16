@@ -1,3 +1,3 @@
-"""RetailRocket recommender — разведочный анализ и подготовка признаков."""
+"""RetailRocket recommender — разведочный анализ, признаки и сравнение моделей."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
